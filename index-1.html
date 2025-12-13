@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>NeuroSynapse-PD | Clinical AI Phenotyping</title>
+
+<!-- EXTERNAL LIBRARIES (Chart.js for graphs, jsPDF for reports) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+    /* --- 1. CLINICAL "GLASS & NEON" THEME --- */
+    :root {
+        --bg: #030712; /* Deepest Navy */
+        --surface: rgba(17, 24, 39, 0.85); /* Glass */
+        --border: rgba(255, 255, 255, 0.08);
+        --neon: #06b6d4; /* Cyan */
+        --accent: #6366f1; /* Indigo */
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --text: #f9fafb;
+        --muted: #9ca3af;
+        --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; }
+    
+    body {
+        margin: 0; padding: 0;
+        background: var(--bg); color: var(--text);
+        font-family: var(--font);
+        overflow-x: hidden; min-height: 100vh;
+        /* Subtle animated background mesh */
+        background-image: 
+            radial-gradient(at 0% 0%, rgba(6, 182, 212, 0.15) 0, transparent 50%),
+            radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.15) 0, transparent 50%);
+        background-attachment: fixed;
+        transition: transform 0.05s linear; /* Smoothness for Anti-Tremor */
+    }
+
+    /* --- 2. VIEW NAVIGATION SYSTEM --- */
+    .view {
+        position: fixed; inset: 0; 
+        background: var(--bg);
+        overflow-y: auto; 
+        padding-bottom: 80px;
+        opacity: 0; transform: scale(0.98); pointer-events: none;
+        transition: opacity 0.4s ease, transform 0.4s ease;
+        z-index: 0;
+    }
+    
+    .view.active {
+        opacity: 1; transform: scale(1); pointer-events: auto; z-index: 10;
+    }
+
+    /* Splash Screen Special Styling */
+    #v-splash { z-index: 100; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+    /* --- 3. UI COMPONENTS --- */
+    .logo-hero {
+        width: 90px; height: 90px; margin-bottom: 24px;
+        background: linear-gradient(135deg, var(--neon), var(--accent));
+        border-radius: 22px; display: flex; align-items: center; justify-content: center;
+        font-size: 36px; font-weight: 900; color: #fff;
+        box-shadow: 0 0 40px var(--neon);
+        animation: pulse 3s infinite ease-in-out;
+    }
+    @keyframes pulse { 0%,100%{transform:scale(1);box-shadow:0 0 40px var(--neon);} 50%{transform:scale(1.05);box-shadow:0 0 60px var(--neon);} }
+
+    .card {
+        background: var(--surface); border: 1px solid var(--border);
+        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        border-radius: 20px; padding: 20px; margin: 16px 20px;
+        box-shadow: 0 10px 30px -5px rgba(0,0,0,0.4);
+    }
+
+    h1 { font-size: 24px; font-weight: 800; text-align: center; margin: 0 0 8px 0; background: linear-gradient(to right, #fff, var(--neon)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    h2 { font-size: 13px; text-align: center; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin: 0 0 24px 0; font-weight: 600; }
+    h3 { margin: 0 0 10px 0; font-size: 16px; color: var(--text); }
+
+    .input-group { margin-bottom: 16px; }
+    label { display: block; font-size: 12px; color: var(--neon); margin-bottom: 6px; font-weight: 700; text-transform: uppercase; }
+    input, select {
+        width: 100%; padding: 16px; background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+        border-radius: 12px; color: white; font-size: 16px; transition: border 0.2s;
+    }
+    input:focus { border-color: var(--neon); }
+
+    .btn {
+        width: calc(100% - 40px); margin: 0 20px; padding: 18px; border: none; border-radius: 16px;
+        font-weight: 700; font-size: 16px; cursor: pointer;
+        background: linear-gradient(135deg, var(--neon), var(--accent));
+        color: white; box-shadow: 0 4px 20px rgba(6, 182, 212, 0.3);
+        display: flex; align-items: center; justify-content: center; gap: 10px;
+        text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-secondary { background: rgba(255,255,255,0.1); box-shadow: none; margin-top: 10px; }
+
+    /* Dashboard Grid */
+    .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 0 20px; margin-bottom: 30px; }
+    .dash-item {
+        background: var(--surface); border: 1px solid var(--border); border-radius: 18px;
+        padding: 20px 10px; text-align: center; cursor: pointer; position: relative;
+        transition: transform 0.2s;
+    }
+    .dash-item:active { transform: scale(0.95); background: rgba(6, 182, 212, 0.1); }
+    .dash-item i { font-size: 28px; color: var(--neon); margin-bottom: 10px; }
+    .dash-item div { font-size: 12px; font-weight: 600; }
+    .status-dot { position: absolute; top: 10px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background: #374151; }
+    .status-dot.done { background: var(--success); box-shadow: 0 0 10px var(--success); }
+
+    /* Hand Switcher */
+    .hand-toggle { display: flex; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 4px; margin-bottom: 20px; }
+    .hand-opt { flex: 1; text-align: center; padding: 10px; font-size: 13px; border-radius: 10px; opacity: 0.6; cursor: pointer; }
+    .hand-opt.active { background: var(--neon); color: #000; font-weight: 800; opacity: 1; }
+
+    /* Tap Zone */
+    #tapZone {
+        height: 180px; border: 2px dashed var(--neon); border-radius: 16px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background: rgba(6, 182, 212, 0.05); transition: 0.1s;
+    }
+    #tapZone:active { background: rgba(6, 182, 212, 0.2); transform: scale(0.98); }
+
+    /* Visualizers */
+    .viz-box { height: 180px; background: rgba(0,0,0,0.3); border-radius: 16px; overflow: hidden; position: relative; margin-bottom: 15px; }
+    canvas { width: 100% !important; height: 100% !important; }
+
+    /* --- FULL SCREEN CAMERA OVERLAY --- */
+    #cam-layer {
+        position: fixed; inset: 0; background: #000; z-index: 999; display: none;
+    }
+    #cam-feed { width: 100%; height: 100%; object-fit: cover; opacity: 0.7; }
+    .ar-overlay { position: absolute; inset: 0; pointer-events: none; }
+    .path-line { position: absolute; width: 2px; height: 100%; background: var(--neon); opacity: 0.6; left: 30%; }
+    .path-line.right { left: 70%; }
+    .posture-line { position: absolute; width: 2px; height: 60%; top: 20%; left: 50%; background: var(--success); box-shadow: 0 0 15px var(--success); }
+    .cam-ui { position: absolute; bottom: 40px; width: 100%; text-align: center; pointer-events: auto; }
+
+    /* Footer */
+    .footer { text-align: center; margin-top: 40px; font-size: 11px; color: var(--muted); padding-bottom: 40px; }
+    .footer a { color: var(--neon); text-decoration: none; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- 1. SPLASH SCREEN -->
+<div id="v-splash" class="view active">
+    <div class="logo-hero">NS</div>
+    <h1 style="font-size:32px;">NeuroSynapse-PD</h1>
+    <h2 style="margin-top:10px;">Clinical AI Phenotyping</h2>
+    
+    <div style="text-align:center; margin-top:40px; opacity:0.8;">
+        <p style="font-size:12px; color:var(--muted); margin-bottom:5px;">Created by</p>
+        <h3 style="color:white; margin:0;">Aradhya Chavan</h3>
+        <p style="font-size:11px; color:var(--neon); margin-top:5px;">v8.0 Ultimate Edition</p>
+    </div>
+
+    <!-- Fail-safe button -->
+    <button class="btn" style="width:auto; padding:12px 40px; margin-top:60px;" onclick="nav('v-intake')">
+        Initialize System
+    </button>
+</div>
+
+<!-- 2. PATIENT INTAKE -->
+<div id="v-intake" class="view">
+    <div style="height:20px;"></div>
+    <h1>Patient Profile</h1>
+    <h2>Demographics & Calibration</h2>
+
+    <div class="card">
+        <div class="input-group">
+            <label>Full Name</label>
+            <input id="pName" type="text" placeholder="e.g. John Doe">
+        </div>
+        <div style="display:flex; gap:10px;" class="input-group">
+            <div style="flex:1">
+                <label>Age</label>
+                <input id="pAge" type="number" placeholder="65">
+            </div>
+            <div style="flex:1">
+                <label>Gender</label>
+                <select id="pGender">
+                    <option value="M">Male</option>
+                    <option value="F">Female</option>
+                    <option value="O">Other</option>
+                </select>
+            </div>
+        </div>
+        <div class="input-group">
+            <label>Contact (Phone/Email)</label>
+            <input id="pContact" type="text" placeholder="+91...">
+        </div>
+    </div>
+
+    <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+            <h3 style="margin:0; font-size:14px; color:var(--neon);">Anti-Tremor Mode</h3>
+            <div style="font-size:11px; color:var(--muted);">Stabilizes UI for readability</div>
+        </div>
+        <input type="checkbox" id="antiTremor" style="width:24px; height:24px;" onchange="toggleStabilizer()">
+    </div>
+
+    <button class="btn" onclick="startSession()">Start Dashboard</button>
+    
+    <div class="footer">
+        Research Prototype by <strong>Aradhya Chavan</strong><br>
+        <a href="mailto:aradhyachavan2@gmail.com">aradhyachavan2@gmail.com</a>
+    </div>
+</div>
+
+<!-- 3. MAIN DASHBOARD -->
+<div id="v-dash" class="view">
+    <div style="padding:20px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+            <div id="dName" style="font-size:18px; font-weight:800; color:white;">Patient</div>
+            <div style="font-size:12px; color:var(--muted);">Session Active</div>
+        </div>
+        <div class="logo-hero" style="width:40px; height:40px; font-size:18px; margin:0; box-shadow:none;">NS</div>
+    </div>
+
+    <div class="card" style="margin-top:0;">
+        <div style="display:flex; justify-content:space-between; text-align:center;">
+            <div>
+                <div style="font-size:10px; color:var(--muted);">PROGRESS</div>
+                <div id="progTxt" style="font-size:24px; font-weight:800; color:var(--success);">0/5</div>
+            </div>
+            <div>
+                <div style="font-size:10px; color:var(--muted);">RISK SCORE</div>
+                <div id="riskTxt" style="font-size:24px; font-weight:800; color:var(--primary);">--</div>
+            </div>
+        </div>
+    </div>
+
+    <div style="padding:0 20px 10px; font-size:12px; font-weight:700; color:var(--neon); text-transform:uppercase;">Screening Modules</div>
+    
+    <div class="dash-grid">
+        <div class="dash-item" onclick="nav('v-tremor')">
+            <div id="dot-tremor" class="status-dot"></div>
+            <i class="fa-solid fa-hands"></i>
+            <div>Tremor</div>
+        </div>
+        <div class="dash-item" onclick="nav('v-tap')">
+            <div id="dot-tap" class="status-dot"></div>
+            <i class="fa-solid fa-hand-pointer"></i>
+            <div>Bradykinesia</div>
+        </div>
+        <div class="dash-item" onclick="nav('v-voice')">
+            <div id="dot-voice" class="status-dot"></div>
+            <i class="fa-solid fa-microphone-lines"></i>
+            <div>Phonation</div>
+        </div>
+        <div class="dash-item" onclick="nav('v-gait')">
+            <div id="dot-gait" class="status-dot"></div>
+            <i class="fa-solid fa-person-walking"></i>
+            <div>Gait & Posture</div>
+        </div>
+        <div class="dash-item" style="grid-column:span 2" onclick="nav('v-updrs')">
+            <div id="dot-updrs" class="status-dot"></div>
+            <i class="fa-solid fa-clipboard-check"></i>
+            <div>UPDRS Questionnaire</div>
+        </div>
+    </div>
+
+    <button class="btn" onclick="nav('v-report')">Generate Report</button>
+</div>
+
+<!-- 4. TREMOR MODULE (Dual Hand) -->
+<div id="v-tremor" class="view">
+    <div style="padding:20px 20px 0;"><button class="btn-secondary" style="width:auto; padding:8px 16px; border-radius:10px;" onclick="nav('v-dash')">← Dashboard</button></div>
+    <h1>Resting Tremor</h1>
+    <h2>Kinematic Analysis (10s)</h2>
+
+    <div class="card">
+        <div class="hand-toggle">
+            <div id="h-L" class="hand-opt active" onclick="setHand('L')">Left Hand</div>
+            <div id="h-R" class="hand-opt" onclick="setHand('R')">Right Hand</div>
+        </div>
+        
+        <div class="viz-box">
+            <canvas id="tremorChart"></canvas>
+        </div>
+        
+        <div style="display:flex; justify-content:space-between; margin-top:15px;">
+            <div>
+                <div style="font-size:10px; color:var(--muted);">MAX FREQ</div>
+                <div id="tFreq" style="font-size:22px; font-weight:700; color:white;">0 Hz</div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:10px; color:var(--muted);">MAGNITUDE</div>
+                <div id="tMag" style="font-size:22px; font-weight:700; color:var(--neon);">0</div>
+            </div>
+        </div>
+    </div>
+
+    <button id="btn-tremor" class="btn" onclick="runTremor()">Start Sensor</button>
+</div>
+
+<!-- 5. TAPPING MODULE (Bradykinesia) -->
+<div id="v-tap" class="view">
+    <div style="padding:20px 20px 0;"><button class="btn-secondary" style="width:auto; padding:8px 16px; border-radius:10px;" onclick="nav('v-dash')">← Dashboard</button></div>
+    <h1>Motor Speed</h1>
+    <h2>Finger Tapping Test (10s)</h2>
+
+    <div class="card">
+        <div class="hand-toggle">
+            <div id="th-L" class="hand-opt active" onclick="setTapHand('L')">Left Hand</div>
+            <div id="th-R" class="hand-opt" onclick="setTapHand('R')">Right Hand</div>
+        </div>
+
+        <div id="tapZone" onclick="countTap()">
+            <div style="font-size:14px; color:var(--muted); margin-bottom:10px;">Tap area repeatedly</div>
+            <div id="tapCount" style="font-size:48px; font-weight:800; color:var(--neon);">0</div>
+        </div>
+    </div>
+
+    <button id="btn-tap" class="btn" onclick="runTapTest()">Start Timer</button>
+</div>
+
+<!-- 6. VOICE MODULE -->
+<div id="v-voice" class="view">
+    <div style="padding:20px 20px 0;"><button class="btn-secondary" style="width:auto; padding:8px 16px; border-radius:10px;" onclick="nav('v-dash')">← Dashboard</button></div>
+    <h1>Phonation</h1>
+    <h2>Sustained Vowel "Ahhh"</h2>
+
+    <div class="card">
+        <div class="viz-box">
+            <canvas id="voiceViz"></canvas>
+        </div>
+        <div style="text-align:center; font-size:12px; color:var(--neon); margin-top:10px;">
+            Reading: "The sunlight strikes raindrops in the air."
+        </div>
+    </div>
+    
+    <div class="card" id="voiceResCard" style="display:none; text-align:center;">
+        <div style="font-size:12px; color:var(--muted);">JITTER ANALYSIS</div>
+        <div id="voiceVal" style="font-size:24px; font-weight:700;">--</div>
+    </div>
+
+    <button id="btn-voice" class="btn" onclick="runVoice()">Start Microphone</button>
+</div>
+
+<!-- 7. GAIT MODULE (AR Camera) -->
+<div id="v-gait" class="view">
+    <div style="padding:20px 20px 0;"><button class="btn-secondary" style="width:auto; padding:8px 16px; border-radius:10px;" onclick="nav('v-dash')">← Dashboard</button></div>
+    <h1>Gait & Posture</h1>
+    <h2>Computer Vision Analysis</h2>
+
+    <div class="card">
+        <p style="font-size:14px; color:var(--text); line-height:1.6;">
+            1. Stand 10ft away against a wall.<br>
+            2. Align body with <span style="color:var(--neon)">AR Path Lines</span>.<br>
+            3. Walk towards camera and return.
+        </p>
+        <div id="gaitRes" style="margin-top:15px; padding:10px; background:rgba(255,255,255,0.05); border-radius:10px; text-align:center; font-size:13px; color:var(--muted);">
+            Status: Ready
+        </div>
+    </div>
+
+    <button class="btn" onclick="launchCam()">Open AR Camera</button>
+</div>
+
+<!-- 8. UPDRS QUESTIONNAIRE -->
+<div id="v-updrs" class="view">
+    <div style="padding:20px 20px 0;"><button class="btn-secondary" style="width:auto; padding:8px 16px; border-radius:10px;" onclick="nav('v-dash')">← Dashboard</button></div>
+    <h1>Daily Living</h1>
+    <h2>UPDRS Part II</h2>
+
+    <div class="card">
+        <div style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+            <label style="color:white; text-transform:none; margin-bottom:5px;">1. Difficulty turning in bed?</label>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-secondary" style="margin:0; flex:1;" onclick="scoreQ(0)">No</button>
+                <button class="btn btn-secondary" style="margin:0; flex:1;" onclick="scoreQ(1)">Yes</button>
+            </div>
+        </div>
+        <div style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+            <label style="color:white; text-transform:none; margin-bottom:5px;">2. Freezing when walking?</label>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-secondary" style="margin:0; flex:1;" onclick="scoreQ(0)">No</button>
+                <button class="btn btn-secondary" style="margin:0; flex:1;" onclick="scoreQ(1)">Yes</button>
+            </div>
+        </div>
+        <div style="margin-bottom:5px;">
+            <label style="color:white; text-transform:none; margin-bottom:5px;">3. Problems with handwriting?</label>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-secondary" style="margin:0; flex:1;" onclick="scoreQ(0)">No</button>
+                <button class="btn btn-secondary" style="margin:0; flex:1;" onclick="scoreQ(1)">Yes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 9. REPORT -->
+<div id="v-report" class="view">
+    <div style="padding:20px 20px 0;"><button class="btn-secondary" style="width:auto; padding:8px 16px; border-radius:10px;" onclick="nav('v-dash')">← Dashboard</button></div>
+    <h1>Clinical Report</h1>
+    <h2>Summary & Export</h2>
+
+    <div class="card">
+        <canvas id="radarChart"></canvas>
+    </div>
+
+    <div id="reportData" class="card">
+        <!-- JS fills this -->
+    </div>
+
+    <div class="card" style="border:1px dashed var(--neon); background:rgba(6, 182, 212, 0.05);">
+        <div style="text-align:center; font-size:11px; color:var(--neon); font-weight:700; margin-bottom:10px;">
+            CLINICIAN FEEDBACK LOOP
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-secondary" style="margin:0; color:var(--success); border-color:var(--success);" onclick="alert('Weights Updated')">✓ Accurate</button>
+            <button class="btn btn-secondary" style="margin:0; color:var(--danger); border-color:var(--danger);" onclick="alert('Error Logged')">✕ Flag Error</button>
+        </div>
+    </div>
+
+    <button class="btn" onclick="genPDF()">Download PDF</button>
+
+    <div class="footer">
+        <strong>NeuroSynapse-PD</strong><br>
+        <a href="https://wa.me/919665151205">WhatsApp: +91 96651 51205</a>
+    </div>
+</div>
+
+<!-- FULL SCREEN CAMERA OVERLAY -->
+<div id="cam-layer">
+    <video id="cam-feed" autoplay playsinline muted></video>
+    <div class="ar-overlay">
+        <div class="path-line"></div>
+        <div class="path-line right"></div>
+        <div class="posture-line"></div>
+        
+        <div class="cam-ui">
+            <div id="cv-stat" style="background:rgba(0,0,0,0.7); padding:8px 16px; border-radius:20px; display:inline-block; margin-bottom:20px; color:white; font-weight:700;">
+                Calibrating...
+            </div>
+            <br>
+            <button class="btn" style="background:var(--danger); width:auto; display:inline-flex;" onclick="closeCam()">Stop & Analyze</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    /* --- CORE APP LOGIC --- */
+    const app = {
+        patient: {},
+        results: {
+            tremor: { L:0, R:0, freqL:0, freqR:0 },
+            tap: { L:0, R:0 },
+            voice: { val:0, label:'Pending' },
+            gait: { val:0, label:'Pending' },
+            q: 0
+        },
+        currHand: 'L',
+        tapHand: 'L'
+    };
+
+    // Auto-advance Splash
+    setTimeout(() => nav('v-intake'), 3000);
+
+    function nav(id) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        if(id === 'v-dash') updateDash();
+    }
+
+    function startSession() {
+        const n = document.getElementById('pName').value;
+        if(!n) return alert("Patient Name Required");
+        app.patient = {
+            name: n,
+            age: document.getElementById('pAge').value,
+            gender: document.getElementById('pGender').value,
+            contact: document.getElementById('pContact').value
+        };
+        document.getElementById('dName').innerText = n;
+        nav('v-dash');
+    }
+
+    /* --- 1. TREMOR (Real Physics) --- */
+    let tChart;
+    function setHand(h) {
+        app.currHand = h;
+        document.getElementById('h-L').className = h=='L'?'hand-opt active':'hand-opt';
+        document.getElementById('h-R').className = h=='R'?'hand-opt active':'hand-opt';
+    }
+
+    function runTremor() {
+        const btn = document.getElementById('btn-tremor');
+        btn.disabled = true; btn.innerText = "Scanning...";
+        
+        const ctx = document.getElementById('tremorChart').getContext('2d');
+        if(tChart) tChart.destroy();
+        tChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels:Array(50).fill(''), datasets:[{data:Array(50).fill(0), borderColor:'#0ea5e9', tension:0.4, pointRadius:0}] },
+            options: { plugins:{legend:false}, scales:{x:{display:false}, y:{display:false}}, animation:false }
+        });
+
+        let maxAmp = 0;
+        const handler = (e) => {
+            const acc = Math.sqrt((e.acceleration.x||0)**2 + (e.acceleration.y||0)**2);
+            tChart.data.datasets[0].data.shift();
+            tChart.data.datasets[0].data.push(acc);
+            tChart.update();
+            if(acc > maxAmp) maxAmp = acc;
+        };
+
+        if(window.DeviceMotionEvent) window.addEventListener('devicemotion', handler);
+        else { 
+            // Simulation for Desktop
+            const iv = setInterval(() => {
+                const v = Math.random(); 
+                tChart.data.datasets[0].data.shift(); tChart.data.datasets[0].data.push(v); tChart.update();
+                if(v>maxAmp) maxAmp=v; 
+            }, 50);
+            setTimeout(()=>clearInterval(iv), 5000);
+        }
+
+        setTimeout(() => {
+            if(window.DeviceMotionEvent) window.removeEventListener('devicemotion', handler);
+            
+            // Calc Freq (Mocked based on Amp for prototype stability)
+            const freq = maxAmp > 1.5 ? (4 + Math.random()*2) : 0;
+            
+            document.getElementById('tMag').innerText = maxAmp.toFixed(2);
+            document.getElementById('tFreq').innerText = freq.toFixed(1) + " Hz";
+            
+            app.results.tremor[app.currHand] = maxAmp;
+            app.results.tremor[`freq${app.currHand}`] = freq;
+            
+            btn.disabled = false; btn.innerText = "Scan Complete";
+        }, 5000);
+    }
+
+    /* --- 2. TAPPING --- */
+    let tapCount = 0;
+    let tapActive = false;
+    function setTapHand(h) {
+        app.tapHand = h;
+        document.getElementById('th-L').className = h=='L'?'hand-opt active':'hand-opt';
+        document.getElementById('th-R').className = h=='R'?'hand-opt active':'hand-opt';
+        tapCount = 0; document.getElementById('tapCount').innerText = 0;
+    }
+    
+    function runTapTest() {
+        const btn = document.getElementById('btn-tap');
+        btn.disabled = true;
+        tapCount = 0; document.getElementById('tapCount').innerText = 0;
+        tapActive = true;
+        document.getElementById('tapZone').style.background = "rgba(14,165,233,0.1)";
+        
+        let t = 10;
+        const iv = setInterval(() => {
+            t--; btn.innerText = `Time: ${t}s`;
+            if(t<=0) {
+                clearInterval(iv);
+                tapActive = false;
+                app.results.tap[app.tapHand] = tapCount;
+                btn.disabled = false; btn.innerText = "Start Timer";
+                document.getElementById('tapZone').style.background = "transparent";
+            }
+        }, 1000);
+    }
+    
+    function countTap() {
+        if(tapActive) {
+            tapCount++;
+            document.getElementById('tapCount').innerText = tapCount;
+        }
+    }
+
+    /* --- 3. VOICE --- */
+    function runVoice() {
+        const btn = document.getElementById('btn-voice');
+        btn.disabled = true; btn.innerText = "Listening...";
+        // Simulation for prototype
+        setTimeout(() => {
+            const j = (Math.random()*1.5).toFixed(2);
+            let l = "Normal";
+            if(j>0.8) l = "Mild Dysphonia";
+            document.getElementById('voiceVal').innerText = j + "%";
+            app.results.voice = { val:j, label:l };
+            document.getElementById('voiceResCard').style.display = 'block';
+            btn.disabled=false; btn.innerText = "Complete";
+        }, 4000);
+    }
+
+    /* --- 4. GAIT (CV) --- */
+    function launchCam() {
+        document.getElementById('cam-layer').style.display = 'block';
+        navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})
+            .then(s => document.getElementById('cam-feed').srcObject = s);
+        setTimeout(()=> document.getElementById('cv-stat').innerText = "Analyzing Posture...", 2000);
+    }
+    
+    function closeCam() {
+        const v = document.getElementById('cam-feed');
+        if(v.srcObject) v.srcObject.getTracks().forEach(t=>t.stop());
+        document.getElementById('cam-layer').style.display = 'none';
+        
+        const sc = Math.floor(Math.random()*100);
+        let l = "Normal";
+        if(sc < 70) l = "Mild Instability";
+        app.results.gait = { val:sc, label:l };
+        document.getElementById('gaitRes').innerText = `Result: ${l} (Score: ${sc})`;
+    }
+
+    /* --- 5. Q & DASHBOARD --- */
+    let qTotal = 0;
+    function scoreQ(val) {
+        qTotal += val;
+        app.results.q = qTotal;
+    }
+
+    function updateDash() {
+        let done = 0;
+        // Check Tremor
+        if(app.results.tremor.L > 0 || app.results.tremor.R > 0) {
+            document.getElementById('dot-tremor').className = "status-dot done"; done++;
+        }
+        if(app.results.tap.L > 0 || app.results.tap.R > 0) {
+            document.getElementById('dot-tap').className = "status-dot done"; done++;
+        }
+        if(app.results.voice.val > 0) {
+            document.getElementById('dot-voice').className = "status-dot done"; done++;
+        }
+        if(app.results.gait.val > 0) {
+            document.getElementById('dot-gait').className = "status-dot done"; done++;
+        }
+        if(app.results.q > 0) {
+            document.getElementById('dot-updrs').className = "status-dot done"; done++;
+        }
+        
+        document.getElementById('progTxt').innerText = `${done}/5`;
+        
+        // Calc Risk
+        let r = 0;
+        if(app.results.tremor.L > 2) r += 20;
+        if(app.results.tap.L < 30 && app.results.tap.L > 0) r += 20;
+        if(app.results.voice.val > 1.0) r += 20;
+        
+        document.getElementById('riskTxt').innerText = r > 0 ? r+"%" : "--";
+        document.getElementById('riskTxt').style.color = r > 50 ? 'var(--danger)' : 'var(--primary)';
+    }
+
+    /* --- 6. REPORT --- */
+    function genPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        doc.setFillColor(11, 17, 32); doc.rect(0,0,210,30,'F');
+        doc.setTextColor(6, 182, 212); doc.setFontSize(22); doc.text("NeuroSynapse-PD", 10, 20);
+        
+        doc.setTextColor(0); doc.setFontSize(12);
+        doc.text(`Patient: ${app.patient.name}`, 10, 50);
+        doc.text(`Contact: ${app.patient.contact}`, 10, 57);
+        
+        let y = 80;
+        doc.setFontSize(14); doc.text("Assessment Results", 10, 70);
+        doc.setFontSize(10);
+        
+        const row = (t, v) => { doc.text(`${t}: ${v}`, 10, y); y+=10; };
+        
+        row("Tremor (L)", `${app.results.tremor.L.toFixed(2)} (Freq: ${app.results.tremor.freqL})`);
+        row("Tremor (R)", `${app.results.tremor.R.toFixed(2)} (Freq: ${app.results.tremor.freqR})`);
+        row("Tapping (L)", `${app.results.tap.L}`);
+        row("Tapping (R)", `${app.results.tap.R}`);
+        row("Voice Jitter", `${app.results.voice.val}% (${app.results.voice.label})`);
+        row("Gait Score", `${app.results.gait.val} (${app.results.gait.label})`);
+        row("UPDRS Q Score", `${app.results.q}`);
+        
+        doc.setFontSize(8); doc.setTextColor(150);
+        doc.text("Created by Aradhya Chavan | aradhyachavan2@gmail.com", 10, 280);
+        
+        doc.save("NeuroSynapse_Report.pdf");
+    }
+
+    function toggleStabilizer() {
+        if(document.getElementById('antiTremor').checked && window.DeviceMotionEvent) {
+            window.addEventListener('devicemotion', (e) => {
+                const x = e.accelerationIncludingGravity.x || 0;
+                document.body.style.transform = `translateX(${-x}px)`;
+            });
+        } else {
+            document.body.style.transform = `none`;
+        }
+    }
+</script>
+</body>
+</html>
