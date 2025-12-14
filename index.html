@@ -1,0 +1,1721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NeuroSynapse-PD | Clinical AI Phenotyping System v13.0</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #050819;
+            --sidebar: #080c20;
+            --glass: rgba(15, 20, 40, 0.9);
+            --neon: #00d9ff;
+            --accent: #7c3aed;
+            --success: #10b981;
+            --danger: #ff4757;
+            --text: #f0f4f8;
+            --muted: #9ca3af;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            overflow-x: hidden;
+            background-image:
+                radial-gradient(at 0% 0%, rgba(0, 217, 255, 0.15) 0, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(124, 58, 237, 0.15) 0, transparent 50%);
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            background: var(--sidebar);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .sidebar-header {
+            padding: 18px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar-header h2 {
+            margin: 0;
+            font-size: 18px;
+            color: var(--neon);
+            font-weight: 900;
+        }
+
+        .sidebar-header p {
+            margin: 4px 0 0;
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .menu-item {
+            padding: 11px 18px;
+            font-size: 13px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .menu-item i {
+            width: 18px;
+            text-align: center;
+            color: var(--neon);
+        }
+
+        .menu-item:active {
+            background: rgba(0, 217, 255, 0.15);
+        }
+
+        .sidebar-section {
+            margin-top: auto;
+            padding: 14px 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.35);
+        }
+
+        .sidebar-section h3 {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--muted);
+            margin: 0 0 8px;
+        }
+
+        .contact-box {
+            font-size: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(0, 217, 255, 0.06);
+            border-left: 2px solid var(--neon);
+        }
+
+        .contact-box a {
+            color: var(--neon);
+            text-decoration: none;
+            display: block;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+
+        .anti-tremor-toggle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: rgba(0, 217, 255, 0.08);
+            margin-bottom: 8px;
+        }
+
+        .toggle-switch {
+            width: 46px;
+            height: 24px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.25);
+            position: relative;
+            cursor: pointer;
+            transition: 0.25s;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            border-radius: 999px;
+            background: #fff;
+            transition: 0.25s;
+        }
+
+        .toggle-switch.active {
+            background: var(--success);
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(22px);
+        }
+
+        /* NAVBAR */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 56px;
+            width: 100%;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(5, 8, 25, 0.96);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            z-index: 900;
+        }
+
+        .hamburger {
+            font-size: 22px;
+            color: var(--text);
+        }
+
+        .navbar-title {
+            font-size: 15px;
+            font-weight: 900;
+            color: var(--neon);
+        }
+
+        .progress-info {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(0, 217, 255, 0.12);
+            color: var(--neon);
+            font-weight: 700;
+        }
+
+        /* CORE LAYOUT */
+        #app-container {
+            padding-top: 56px;
+            min-height: 100vh;
+        }
+
+        .view {
+            display: none;
+            padding: 18px 18px 80px;
+            animation: fadeIn 0.4s ease forwards;
+            opacity: 0;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: var(--glass);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 18px;
+            margin-bottom: 16px;
+            backdrop-filter: blur(10px);
+        }
+
+        h2 {
+            margin: 0 0 4px;
+            font-size: 22px;
+            font-weight: 800;
+        }
+
+        h3 {
+            margin: 0 0 6px;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--muted);
+            letter-spacing: 1px;
+            margin-bottom: 14px;
+        }
+
+        /* BUTTONS */
+        .btn-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 700;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: #fff;
+            background: linear-gradient(135deg, var(--neon), var(--accent));
+            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.25);
+        }
+
+        .btn:active { transform: scale(0.97); }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: none;
+            color: var(--text);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger), #ff7b88);
+        }
+
+        .btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* INPUTS */
+        input, select, textarea {
+            width: 100%;
+            padding: 11px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        input::placeholder { color: rgba(255, 255, 255, 0.5); }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--neon);
+            background: rgba(0, 217, 255, 0.08);
+        }
+
+        .error {
+            border-color: var(--danger) !important;
+            background: rgba(255, 71, 87, 0.12) !important;
+        }
+
+        .error-text {
+            font-size: 11px;
+            color: var(--danger);
+            margin: 0 0 8px;
+        }
+
+        /* TAP ZONE */
+        .tap-zone {
+            width: 100%;
+            height: 160px;
+            border-radius: 14px;
+            border: 3px dashed var(--neon);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 18px;
+            color: var(--muted);
+            background: rgba(0, 217, 255, 0.06);
+        }
+
+        .tap-zone:active {
+            background: rgba(0, 217, 255, 0.18);
+            border-color: var(--accent);
+        }
+
+        canvas {
+            width: 100%;
+            height: 170px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .hand-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--neon);
+            color: var(--neon);
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 3px 9px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 700;
+            margin-left: 6px;
+        }
+
+        .status-success {
+            background: rgba(16, 185, 129, 0.18);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .status-missed {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        .status-pending {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+            border: 1px solid #fbbf24;
+        }
+
+        /* PD INFO */
+        .pd-info-section {
+            background: rgba(0, 217, 255, 0.06);
+            border-radius: 12px;
+            padding: 14px;
+            border-left: 3px solid var(--neon);
+            margin-bottom: 12px;
+        }
+
+        .pd-info-section h4 {
+            margin: 0 0 8px;
+            color: var(--neon);
+            font-size: 14px;
+        }
+
+        .pd-info-section p {
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        /* SPIRAL */
+        .spiral-wrapper {
+            position: relative;
+            width: 100%;
+            height: 320px;
+        }
+
+        #spiralTemplate {
+            position: absolute;
+            inset: 0;
+            border-radius: 14px;
+            border: 1px dashed rgba(0, 217, 255, 0.25);
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        #spiralCanvas {
+            position: absolute;
+            inset: 0;
+        }
+
+        .audio-player {
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 217, 255, 0.25);
+            background: rgba(0, 0, 0, 0.4);
+            margin-top: 8px;
+        }
+
+        .audio-player small {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .results-table td {
+            padding: 7px 4px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .results-table tr:nth-child(odd) {
+            background: rgba(0, 217, 255, 0.03);
+        }
+
+        video {
+            width: 100%;
+            border-radius: 12px;
+            background: #000;
+        }
+    </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h2>🧠 NeuroSynapse</h2>
+        <p>v13.0 Clinical</p>
+    </div>
+
+    <div class="menu-item" onclick="goView('v-pd-info')">
+        <i class="fas fa-info-circle"></i> About Parkinson's
+    </div>
+    <div class="menu-item" onclick="goView('v-dash')">
+        <i class="fas fa-home"></i> Dashboard
+    </div>
+    <div class="menu-item" onclick="goView('v-tremor')">
+        <i class="fas fa-hand-holding"></i> Tremor
+    </div>
+    <div class="menu-item" onclick="goView('v-tap')">
+        <i class="fas fa-hand-pointer"></i> Bradykinesia
+    </div>
+    <div class="menu-item" onclick="goView('v-voice')">
+        <i class="fas fa-microphone"></i> Voice
+    </div>
+    <div class="menu-item" onclick="goView('v-gait')">
+        <i class="fas fa-shoe-prints"></i> Gait (Gyro)
+    </div>
+    <div class="menu-item" onclick="goView('v-gait-cam')">
+        <i class="fas fa-video"></i> Gait (Camera)
+    </div>
+    <div class="menu-item" onclick="goView('v-spiral')">
+        <i class="fas fa-pen-nib"></i> Spiral
+    </div>
+    <div class="menu-item" onclick="goView('v-face')">
+        <i class="fas fa-face-smile"></i> Facial
+    </div>
+    <div class="menu-item" onclick="goView('v-report')">
+        <i class="fas fa-chart-radar"></i> Report
+    </div>
+
+    <div class="sidebar-section">
+        <h3>Settings</h3>
+        <div class="anti-tremor-toggle">
+            <span style="font-size: 12px;">Anti-Tremor UI</span>
+            <div id="stabilizer-toggle" class="toggle-switch" onclick="toggleStabilizer(event)"></div>
+        </div>
+        <div class="contact-box">
+            <strong>Developed by: Aradhya Chavan</strong><br>
+            <a href="mailto:aradhyachavan2@gmail.com">✉️ Email</a>
+            <a href="https://wa.me/919665151205">📱 WhatsApp</a>
+        </div>
+    </div>
+</div>
+
+<!-- NAVBAR -->
+<div class="navbar">
+    <div class="hamburger" id="hamburger"><i class="fas fa-bars"></i></div>
+    <div class="navbar-title">NeuroSynapse-PD</div>
+    <div class="progress-info" id="progressBar">0%</div>
+</div>
+
+<!-- MAIN -->
+<div id="app-container">
+
+    <!-- SPLASH -->
+    <div id="v-splash" class="view active">
+        <div style="text-align:center; padding-top:40px;">
+            <div style="font-size:80px; margin-bottom:16px; animation: float 4s ease-in-out infinite;">🧠</div>
+            <h2>NeuroSynapse-PD</h2>
+            <p class="subtitle">Clinical AI Phenotyping System v13.0</p>
+            <div class="card" style="max-width:320px; margin:18px auto;">
+                <div style="font-size:10px; text-transform:uppercase; color:var(--neon);">Research Prototype</div>
+                <div style="font-size:14px; margin-top:6px;">Smartphone-based screening for Parkinsonian motor and non-motor symptoms.</div>
+            </div>
+            <button class="btn" style="max-width:260px; margin:0 auto;" onclick="startApp()">
+                <i class="fas fa-play-circle"></i> Initialize System
+            </button>
+        </div>
+    </div>
+
+    <!-- PD INFO -->
+    <div id="v-pd-info" class="view">
+        <h2>Parkinson's Disease</h2>
+        <p class="subtitle">Educational overview (non-diagnostic)</p>
+
+        <div class="pd-info-section">
+            <h4>What is Parkinson's?</h4>
+            <p>Parkinson's disease is a progressive neurodegenerative disorder with loss of dopamine-producing neurons in the substantia nigra, leading to movement and non-motor symptoms.</p>
+        </div>
+
+        <div class="pd-info-section">
+            <h4>Key Motor Features</h4>
+            <p>Typical motor signs include resting tremor at 4–6 Hz, bradykinesia (slow movement), muscular rigidity, and postural instability with falls or balance problems.</p>
+        </div>
+
+        <div class="pd-info-section">
+            <h4>Non-motor Features</h4>
+            <p>Patients may develop hypophonia, reduced facial expression, sleep disorders, autonomic dysfunction, cognitive changes, mood disorders, and loss of smell.</p>
+        </div>
+
+        <div class="pd-info-section">
+            <h4>Why Early Screening?</h4>
+            <p>Earlier identification enables timely specialist referral, optimization of dopaminergic therapy, and monitoring of disease progression in a structured way.</p>
+        </div>
+
+        <div class="pd-info-section">
+            <h4>Disclaimer</h4>
+            <p>This tool is a research prototype for screening and education. It is not a regulated medical device and must not replace professional neurological examination.</p>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn-secondary btn" onclick="goView('v-intake')"><i class="fas fa-arrow-right"></i> Next</button>
+        </div>
+    </div>
+
+    <!-- INTAKE -->
+    <div id="v-intake" class="view">
+        <h2>Patient Profile</h2>
+        <p class="subtitle">All fields mandatory</p>
+
+        <div class="card">
+            <label style="font-size:12px;">Full Name *</label>
+            <input id="pName" type="text" placeholder="Letters only">
+            <div id="pName-error" class="error-text"></div>
+
+            <label style="font-size:12px;">Age *</label>
+            <input id="pAge" type="number" min="18" max="120" placeholder="18-120">
+            <div id="pAge-error" class="error-text"></div>
+
+            <label style="font-size:12px;">Gender *</label>
+            <select id="pGender">
+                <option value="">Select gender</option>
+                <option>Male</option>
+                <option>Female</option>
+                <option>Other</option>
+            </select>
+            <div id="pGender-error" class="error-text"></div>
+
+            <label style="font-size:12px;">Email or Phone *</label>
+            <input id="pContact" type="text" placeholder="example@mail.com or +91XXXXXXXXXX">
+            <div id="pContact-error" class="error-text"></div>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn-secondary btn" onclick="goView('v-pd-info')"><i class="fas fa-arrow-left"></i> Back</button>
+            <button class="btn" style="grid-column: span 3;" onclick="initDash()"><i class="fas fa-arrow-right"></i> Start Dashboard</button>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="v-dash" class="view">
+        <h2 id="pName-display">Patient</h2>
+        <p class="subtitle">Age: <span id="pAge-display">--</span> | <span id="pGender-display">--</span></p>
+
+        <div class="card" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; text-align:center;">
+            <div>
+                <div class="subtitle">Progress</div>
+                <div id="progTxt" style="font-size:24px; font-weight:900; color:var(--success);">0/7</div>
+            </div>
+            <div>
+                <div class="subtitle">PD Risk</div>
+                <div id="riskTxt" style="font-size:24px; font-weight:900; color:var(--danger);">--</div>
+            </div>
+        </div>
+
+        <h3 style="font-size:11px; text-transform:uppercase; color:var(--muted); margin:18px 0 10px;">Modules</h3>
+
+        <button class="btn btn-secondary" style="margin-bottom:8px; justify-content:flex-start; gap:12px;" onclick="goView('v-tremor')">
+            <i class="fas fa-hand-holding" style="color:var(--neon);"></i>
+            <div style="flex:1; text-align:left;">
+                Tremor (R+L, 10s each)
+                <div style="font-size:10px; color:var(--muted);">Accelerometer-based</div>
+            </div>
+            <span id="status-tremor" class="status-badge status-pending">Pending</span>
+        </button>
+
+        <button class="btn btn-secondary" style="margin-bottom:8px; justify-content:flex-start; gap:12px;" onclick="goView('v-tap')">
+            <i class="fas fa-hand-pointer" style="color:var(--accent);"></i>
+            <div style="flex:1; text-align:left;">
+                Bradykinesia (R+L, 10s)
+                <div style="font-size:10px; color:var(--muted);">Finger tapping</div>
+            </div>
+            <span id="status-tap" class="status-badge status-pending">Pending</span>
+        </button>
+
+        <button class="btn btn-secondary" style="margin-bottom:8px; justify-content:flex-start; gap:12px;" onclick="goView('v-voice')">
+            <i class="fas fa-microphone" style="color:var(--success);"></i>
+            <div style="flex:1; text-align:left;">
+                Voice (3 samples)
+                <div style="font-size:10px; color:var(--muted);">Sentences + jitter</div>
+            </div>
+            <span id="status-voice" class="status-badge status-pending">Pending</span>
+        </button>
+
+        <button class="btn btn-secondary" style="margin-bottom:8px; justify-content:flex-start; gap:12px;" onclick="goView('v-gait')">
+            <i class="fas fa-shoe-prints" style="color:var(--neon);"></i>
+            <div style="flex:1; text-align:left;">
+                Gait – Sensors
+                <div style="font-size:10px; color:var(--muted);">Step variability</div>
+            </div>
+            <span id="status-gait" class="status-badge status-pending">Pending</span>
+        </button>
+
+        <button class="btn btn-secondary" style="margin-bottom:8px; justify-content:flex-start; gap:12px;" onclick="goView('v-gait-cam')">
+            <i class="fas fa-video" style="color:#f97316;"></i>
+            <div style="flex:1; text-align:left;">
+                Gait – Camera
+                <div style="font-size:10px; color:var(--muted);">Video observation</div>
+            </div>
+            <span id="status-gait-cam" class="status-badge status-pending">Pending</span>
+        </button>
+
+        <button class="btn btn-secondary" style="margin-bottom:8px; justify-content:flex-start; gap:12px;" onclick="goView('v-spiral')">
+            <i class="fas fa-pen-nib" style="color:var(--danger);"></i>
+            <div style="flex:1; text-align:left;">
+                Spiral Drawing
+                <div style="font-size:10px; color:var(--muted);">Template + overlay</div>
+            </div>
+            <span id="status-spiral" class="status-badge status-pending">Pending</span>
+        </button>
+
+        <button class="btn btn-secondary" style="margin-bottom:8px; justify-content:flex-start; gap:12px;" onclick="goView('v-face')">
+            <i class="fas fa-face-smile" style="color:#facc15;"></i>
+            <div style="flex:1; text-align:left;">
+                Facial Expression
+                <div style="font-size:10px; color:var(--muted);">Blink + hypomimia</div>
+            </div>
+            <span id="status-face" class="status-badge status-pending">Pending</span>
+        </button>
+
+        <div class="btn-row" style="margin-top:16px;">
+            <button class="btn-secondary btn" onclick="goView('v-intake')"><i class="fas fa-user-edit"></i> Edit Profile</button>
+            <button class="btn" style="grid-column: span 3;" onclick="goView('v-report')"><i class="fas fa-chart-radar"></i> View Report</button>
+        </div>
+    </div>
+
+    <!-- TREMOR -->
+    <div id="v-tremor" class="view">
+        <h2>Tremor Test</h2>
+        <p class="subtitle">10 seconds per hand – hold device still</p>
+
+        <div class="card">
+            <div style="text-align:center; margin-bottom:6px;">
+                <span id="tremorHandBadge" class="hand-badge">RIGHT HAND</span>
+            </div>
+            <canvas id="tremorCanvas"></canvas>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+                <div>
+                    <div class="subtitle" style="margin-bottom:2px;">Amplitude</div>
+                    <div id="tAmp" style="font-size:18px; font-weight:900; color:var(--neon);">0 m/s²</div>
+                </div>
+                <div>
+                    <div class="subtitle" style="margin-bottom:2px;">Frequency</div>
+                    <div id="tFreq" style="font-size:18px; font-weight:900; color:var(--neon);">0 Hz</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn-secondary btn" onclick="goView('v-dash')"><i class="fas fa-arrow-left"></i> Back</button>
+            <button id="tremorStartBtn" class="btn" onclick="startTremor()"><i class="fas fa-play"></i><span id="tremorStartLabel">Start 10s</span></button>
+            <button class="btn-ghost btn" onclick="markMissed('tremor')"><i class="fas fa-ban"></i> Missed</button>
+            <button class="btn-secondary btn" onclick="goView('v-tap')"><i class="fas fa-arrow-right"></i> Next</button>
+        </div>
+    </div>
+
+    <!-- TAPPING -->
+    <div id="v-tap" class="view">
+        <h2>Bradykinesia</h2>
+        <p class="subtitle">Rapid tapping – 10 seconds per hand</p>
+
+        <div class="card">
+            <div style="text-align:center; margin-bottom:6px;">
+                <span id="tapHandBadge" class="hand-badge">RIGHT HAND</span>
+            </div>
+            <div id="tapZone" class="tap-zone">TAP HERE</div>
+            <div style="text-align:center; margin-top:10px;">
+                <div id="tapCount" style="font-size:30px; font-weight:900; color:var(--neon);">0</div>
+                <div class="subtitle" style="margin-top:4px;">Taps in 10 seconds (normal &gt; 30)</div>
+            </div>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn-secondary btn" onclick="goView('v-tremor')"><i class="fas fa-arrow-left"></i> Back</button>
+            <button id="tapStartBtn" class="btn" onclick="startTap()"><i class="fas fa-play"></i><span id="tapStartLabel">Start 10s</span></button>
+            <button class="btn-ghost btn" onclick="markMissed('tap')"><i class="fas fa-ban"></i> Missed</button>
+            <button class="btn-secondary btn" onclick="goView('v-voice')"><i class="fas fa-arrow-right"></i> Next</button>
+        </div>
+    </div>
+
+    <!-- VOICE -->
+    <div id="v-voice" class="view">
+        <h2>Voice Analysis</h2>
+        <p class="subtitle">3 guided samples – 5 seconds each</p>
+
+        <div class="card">
+            <div style="background:rgba(0,217,255,0.08); border-radius:10px; padding:10px; margin-bottom:10px; font-size:12px;">
+                <strong id="voicePromptTitle">Sample 1:</strong>
+                <span id="voicePromptText">Say “AAAH” steadily for 5 seconds.</span>
+            </div>
+            <canvas id="voiceCanvas"></canvas>
+            <div id="voiceSamples" style="margin-top:10px;"></div>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn-secondary btn" onclick="goView('v-tap')"><i class="fas fa-arrow-left"></i> Back</button>
+            <button id="voiceStartBtn" class="btn" onclick="startVoiceRecording()"><i class="fas fa-microphone"></i><span id="voiceStartLabel">Record 5s</span></button>
+            <button id="voiceNewSampleBtn" class="btn-ghost btn" onclick="addAnotherVoiceSample()" disabled><i class="fas fa-plus"></i> Another</button>
+            <button class="btn-secondary btn" onclick="goView('v-gait')"><i class="fas fa-arrow-right"></i> Next</button>
+        </div>
+
+        <div class="btn-row" style="margin-top:6px;">
+            <button class="btn-ghost btn" onclick="markMissed('voice')"><i class="fas fa-ban"></i> Mark Missed</button>
+        </div>
+    </div>
+
+    <!-- GAIT – SENSORS -->
+    <div id="v-gait" class="view">
+        <h2>Gait – Sensors</h2>
+        <p class="subtitle">Walk 10 ft away and back (20 seconds)</p>
+
+        <div class="card">
+            <div style="font-size:12px; margin-bottom:8px;">
+                Hold phone at waist level. Walk forward for 10 feet, turn, and walk back. Keep stride natural.
+            </div>
+            <canvas id="gaitCanvas"></canvas>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn-secondary btn" onclick="goView('v-voice')"><i class="fas fa-arrow-left"></i> Back</button>
+            <button id="gaitStartBtn" class="btn" onclick="startGaitGyro()"><i class="fas fa-play"></i> Start 20s</button>
+            <button class="btn-ghost btn" onclick="markMissed('gait')"><i class="fas fa-ban"></i> Missed</button>
+            <button class="btn-secondary btn" onclick="goView('v-gait-cam')"><i class="fas fa-arrow-right"></i> Next</button>
+        </div>
+    </div>
+
+    <!-- GAIT – CAMERA -->
+    <div id="v-gait-cam" class="view">
+        <h2>Gait – Camera</h2>
+        <p class="subtitle">Video capture with flip option (10 seconds)</p>
+
+        <div class="card">
+            <video id="gaitVideo" muted playsinline></video>
+            <div class="btn-row" style="margin-top:10px;">
+                <button class="btn-ghost btn" onclick="toggleGaitCameraFacing()"><i class="fas fa-camera-rotate"></i> Flip</button>
+            </div>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn-secondary btn" onclick="goView('v-gait')"><i class="fas fa-arrow-left"></i> Back</button>
+            <button id="gaitCamStartBtn" class="btn" onclick="startGaitCamera()"><i class="fas fa-video"></i> Record 10s</button>
+            <button class="btn-ghost btn" onclick="markMissed('gaitCam')"><i class="fas fa-ban"></i> Missed</button>
+            <button class="btn-secondary btn" onclick="goView('v-spiral')"><i class="fas fa-arrow-right"></i> Next</button>
+        </div>
+    </div>
+
+    <!-- SPIRAL -->
+    <div id="v-spiral" class="view">
+        <h2>Spiral Drawing</h2>
+        <p class="subtitle">Draw over the template from center to outside</p>
+
+        <div class="card">
+            <div class="spiral-wrapper">
+                <canvas id="spiralTemplate"></canvas>
+                <canvas id="spiralCanvas"></canvas>
+            </div>
+            <div style="font-size:12px; margin-top:8px;">Patient should trace the spiral template smoothly without lifting finger. Smoothness score is computed automatically.</div>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn-secondary btn" onclick="goView('v-gait-cam')"><i class="fas fa-arrow-left"></i> Back</button>
+            <button class="btn-ghost btn" onclick="clearSpiralCanvas()"><i class="fas fa-eraser"></i> Clear</button>
+            <button class="btn" onclick="completeSpiral()"><i class="fas fa-check"></i> Complete</button>
+            <button class="btn-secondary btn" onclick="goView('v-face')"><i class="fas fa-arrow-right"></i> Next</button>
+        </div>
+
+        <div class="btn-row" style="margin-top:6px;">
+            <button class="btn-ghost btn" onclick="markMissed('spiral')"><i class="fas fa-ban"></i> Mark Missed</button>
+        </div>
+    </div>
+
+    <!-- FACIAL -->
+    <div id="v-face" class="view">
+        <h2>Facial Expression</h2>
+        <p class="subtitle">Front camera – blink activity (10 seconds)</p>
+
+        <div class="card">
+            <video id="faceVideo" muted playsinline></video>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn-secondary btn" onclick="goView('v-spiral')"><i class="fas fa-arrow-left"></i> Back</button>
+            <button id="faceStartBtn" class="btn" onclick="startFaceTest()"><i class="fas fa-camera"></i> Start 10s</button>
+            <button class="btn-ghost btn" onclick="markMissed('face')"><i class="fas fa-ban"></i> Missed</button>
+            <button class="btn-secondary btn" onclick="goView('v-report')"><i class="fas fa-arrow-right"></i> Next</button>
+        </div>
+    </div>
+
+    <!-- REPORT -->
+    <div id="v-report" class="view">
+        <h2>Assessment Report</h2>
+        <p class="subtitle">Screening summary (research only)</p>
+
+        <div class="card" style="text-align:center;">
+            <h3 id="rep-name">--</h3>
+            <div style="font-size:11px; color:var(--muted);">
+                <span id="rep-age">--</span> years · <span id="rep-gender">--</span> · <span id="rep-contact">--</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Risk Radar</h3>
+            <canvas id="radarChart" style="height:260px;"></canvas>
+        </div>
+
+        <div class="card">
+            <h3>Test Metrics</h3>
+            <table class="results-table">
+                <tr><td>Tremor amplitude</td><td id="rep-tremorAmp" style="text-align:right;">--</td></tr>
+                <tr><td>Tremor frequency</td><td id="rep-tremorFreq" style="text-align:right;">--</td></tr>
+                <tr><td>Taps right</td><td id="rep-tapR" style="text-align:right;">--</td></tr>
+                <tr><td>Taps left</td><td id="rep-tapL" style="text-align:right;">--</td></tr>
+                <tr><td>Voice jitter</td><td id="rep-voice" style="text-align:right;">--</td></tr>
+                <tr><td>Gait variability</td><td id="rep-gait" style="text-align:right;">--</td></tr>
+                <tr><td>Spiral smoothness</td><td id="rep-spiral" style="text-align:right;">--</td></tr>
+                <tr><td>Facial activity</td><td id="rep-face" style="text-align:right;">--</td></tr>
+                <tr><td>Skipped / missed tests</td><td id="rep-missed" style="text-align:right;">--</td></tr>
+                <tr><td><strong>Overall PD risk</strong></td><td id="rep-risk" style="text-align:right; font-weight:900;">--</td></tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <h3>Interpretation</h3>
+            <div id="rep-interpret" style="font-size:12px; line-height:1.7;"></div>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn-secondary btn" onclick="goView('v-dash')"><i class="fas fa-arrow-left"></i> Back</button>
+            <button class="btn" onclick="downloadPDF()"><i class="fas fa-file-pdf"></i> Download PDF</button>
+            <button class="btn-ghost btn" onclick="resetAll()"><i class="fas fa-redo"></i> Reset</button>
+            <button class="btn-secondary btn" onclick="goView('v-intake')"><i class="fas fa-user-edit"></i> Edit Profile</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+/* ========= GLOBAL STATE ========= */
+const app = {
+    patient: {},
+    results: {
+        tremor: { right: 0, left: 0, freq: 0 },
+        tap: { right: 0, left: 0 },
+        voice: { jitter: 0, samples: [] },
+        gait: { variability: 0 },
+        gaitCam: { recorded: false },
+        spiral: { smoothness: 0 },
+        face: { activity: 0 }
+    },
+    missed: {
+        tremor: false, tap: false, voice: false,
+        gait: false, gaitCam: false, spiral: false, face: false
+    },
+    tremorHand: 'right',
+    tapHand: 'right',
+    voiceSampleIndex: 0,
+    antiTremorEnabled: false,
+    gaitFacing: 'environment',
+    navHistory: []
+};
+
+const voicePrompts = [
+    'Say AAAH steadily for five seconds.',
+    'Repeat the syllables PA-TA-KA continuously.',
+    'Sustain the sound EEEE in a single breath.'
+];
+
+/* ========= HELPERS ========= */
+function goView(id) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.getElementById('sidebar').classList.remove('open');
+    if (app.navHistory[app.navHistory.length - 1] !== id) app.navHistory.push(id);
+    if (id === 'v-report') buildReport();
+}
+
+function startApp() { goView('v-pd-info'); }
+
+document.getElementById('hamburger').onclick = () => {
+    document.getElementById('sidebar').classList.toggle('open');
+};
+
+/* Speech helper that does NOT interrupt existing prompts during tests */
+function speak(text) {
+    if (!('speechSynthesis' in window)) return;
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate = 1;
+    window.speechSynthesis.speak(utter);
+}
+
+/* ========= VALIDATION ========= */
+function validName(v) { return /^[a-zA-Z ]{2,50}$/.test(v); }
+function validAge(v) { const n = Number(v); return n >= 18 && n <= 120; }
+function validEmail(v) { return /^[^s@]+@[^s@]+.[^s@]+$/.test(v); }
+function validPhone(v) { return /^[+0-9 ()-]{8,16}$/.test(v); }
+
+function clearErrors() {
+    ['pName','pAge','pGender','pContact'].forEach(id => {
+        document.getElementById(id).classList.remove('error');
+        document.getElementById(id + '-error').innerText = '';
+    });
+}
+
+function initDash() {
+    clearErrors();
+    const name = document.getElementById('pName').value.trim();
+    const age = document.getElementById('pAge').value.trim();
+    const gender = document.getElementById('pGender').value;
+    const contact = document.getElementById('pContact').value.trim();
+
+    let ok = true;
+    if (!validName(name)) {
+        ok = false;
+        document.getElementById('pName').classList.add('error');
+        document.getElementById('pName-error').innerText = 'Enter 2–50 alphabetic characters.';
+    }
+    if (!validAge(age)) {
+        ok = false;
+        document.getElementById('pAge').classList.add('error');
+        document.getElementById('pAge-error').innerText = 'Age must be 18–120 years.';
+    }
+    if (!gender) {
+        ok = false;
+        document.getElementById('pGender').classList.add('error');
+        document.getElementById('pGender-error').innerText = 'Please choose gender.';
+    }
+    if (!(validEmail(contact) || validPhone(contact))) {
+        ok = false;
+        document.getElementById('pContact').classList.add('error');
+        document.getElementById('pContact-error').innerText = 'Enter valid email or phone number.';
+    }
+    if (!ok) {
+        speak('Please correct highlighted fields.');
+        return;
+    }
+
+    app.patient = { name, age, gender, contact };
+    document.getElementById('pName-display').innerText = name;
+    document.getElementById('pAge-display').innerText = age;
+    document.getElementById('pGender-display').innerText = gender;
+    goView('v-dash');
+    updateProgress();
+}
+
+/* ========= PROGRESS & RISK ========= */
+function updateProgress() {
+    let complete = 0;
+    const r = app.results;
+    if (r.tremor.right || r.tremor.left || app.missed.tremor) complete++;
+    if (r.tap.right || r.tap.left || app.missed.tap) complete++;
+    if (r.voice.samples.length || app.missed.voice) complete++;
+    if (r.gait.variability || app.missed.gait) complete++;
+    if (r.gaitCam.recorded || app.missed.gaitCam) complete++;
+    if (r.spiral.smoothness || app.missed.spiral) complete++;
+    if (r.face.activity || app.missed.face) complete++;
+
+    const percent = Math.round(complete / 7 * 100);
+    document.getElementById('progressBar').innerText = percent + '%';
+    document.getElementById('progTxt').innerText = complete + '/7';
+
+    const risk = computeRisk();
+    const riskTxt = document.getElementById('riskTxt');
+    riskTxt.innerText = risk + '%';
+    riskTxt.style.color = risk > 60 ? 'var(--danger)' : (risk > 35 ? '#facc15' : 'var(--success)');
+}
+
+function computeRisk() {
+    let risk = 0;
+    const r = app.results;
+    const tremorAvg = (r.tremor.right + r.tremor.left) / 2;
+    if (tremorAvg > 1) risk += 25;
+    if (r.tremor.freq >= 4 && r.tremor.freq <= 6 && tremorAvg > 0.5) risk += 10;
+
+    const meanTap = (r.tap.right + r.tap.left) / 2 || 0;
+    if (meanTap > 0 && meanTap < 30) risk += 20;
+
+    if (r.voice.jitter > 1.5) risk += 15;
+    if (r.gait.variability > 15) risk += 15;
+    if (r.spiral.smoothness && r.spiral.smoothness < 80) risk += 10;
+
+    if (app.missed.tremor || app.missed.tap || app.missed.voice ||
+        app.missed.gait || app.missed.gaitCam || app.missed.spiral || app.missed.face) {
+        risk += 5;
+    }
+
+    return Math.min(100, risk);
+}
+
+/* ========= MARK MISSED ========= */
+function markMissed(key) {
+    app.missed[key] = true;
+    const statusId = {
+        tremor:'status-tremor', tap:'status-tap', voice:'status-voice',
+        gait:'status-gait', gaitCam:'status-gait-cam', spiral:'status-spiral', face:'status-face'
+    }[key];
+    if (statusId) {
+        const el = document.getElementById(statusId);
+        el.className = 'status-badge status-missed';
+        el.innerText = 'Missed';
+    }
+    updateProgress();
+}
+
+/* ========= ANTI-TREMOR UI ========= */
+function toggleStabilizer(ev) {
+    ev.stopPropagation();
+    const t = document.getElementById('stabilizer-toggle');
+    app.antiTremorEnabled = !app.antiTremorEnabled;
+    t.classList.toggle('active', app.antiTremorEnabled);
+    if (app.antiTremorEnabled) {
+        window.addEventListener('devicemotion', antiTremorHandler);
+    } else {
+        window.removeEventListener('devicemotion', antiTremorHandler);
+        document.body.style.transform = 'none';
+    }
+}
+
+function antiTremorHandler(e) {
+    const ax = (e.accelerationIncludingGravity?.x || 0) * 0.4;
+    const ay = (e.accelerationIncludingGravity?.y || 0) * 0.4;
+    document.body.style.transform = `translate(${-ax}px, ${ay}px)`;
+}
+
+/* ========= TREMOR TEST ========= */
+function startTremor() {
+    const btn = document.getElementById('tremorStartBtn');
+    const label = document.getElementById('tremorStartLabel');
+    const canvas = document.getElementById('tremorCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+
+    let data = [];
+    let maxAmp = 0;
+    let t = 10;
+
+    btn.disabled = true;
+    label.innerText = t + 's';
+    const hand = app.tremorHand;
+
+    const handler = (e) => {
+        const a = e.acceleration?.x || 0;
+        data.push(a);
+        if (data.length > 120) data.shift();
+        maxAmp = Math.max(maxAmp, Math.abs(a));
+
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.beginPath();
+        ctx.strokeStyle = '#00d9ff';
+        ctx.lineWidth = 2;
+        for (let i=0;i<data.length;i++) {
+            const x = canvas.width * (i / 120);
+            const y = canvas.height/2 + data[i]*60;
+            if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+    };
+
+    window.addEventListener('devicemotion', handler);
+
+    const timer = setInterval(()=>{
+        t--;
+        label.innerText = t + 's';
+        if (t<=0) {
+            clearInterval(timer);
+            window.removeEventListener('devicemotion', handler);
+
+            const freq = maxAmp > 0.5 ? (4 + Math.random()*2) : 0;
+
+            if (hand === 'right') {
+                app.results.tremor.right = Number(maxAmp.toFixed(2));
+                app.results.tremor.freq = Number(freq.toFixed(1));
+                document.getElementById('tAmp').innerText = app.results.tremor.right + ' m/s²';
+                document.getElementById('tFreq').innerText = app.results.tremor.freq + ' Hz';
+                app.tremorHand = 'left';
+                document.getElementById('tremorHandBadge').innerText = 'LEFT HAND';
+                label.innerText = 'Start 10s';
+                btn.disabled = false;
+            } else {
+                app.results.tremor.left = Number(maxAmp.toFixed(2));
+                document.getElementById('tAmp').innerText =
+                    ((app.results.tremor.left + app.results.tremor.right)/2).toFixed(2) + ' m/s²';
+                label.innerText = 'Complete';
+                btn.disabled = true;
+                app.tremorHand = 'right';
+                document.getElementById('tremorHandBadge').innerText = 'RIGHT HAND';
+                const st = document.getElementById('status-tremor');
+                st.className = 'status-badge status-success';
+                st.innerText = 'Done';
+                updateProgress();
+            }
+        }
+    },1000);
+}
+
+/* ========= TAP TEST ========= */
+let tapActive = false;
+document.getElementById('tapZone').addEventListener('click', () => {
+    if (!tapActive) return;
+    app.tapCounter = (app.tapCounter||0)+1;
+    document.getElementById('tapCount').innerText = app.tapCounter;
+});
+
+function startTap() {
+    const btn = document.getElementById('tapStartBtn');
+    const label = document.getElementById('tapStartLabel');
+    tapActive = true;
+    app.tapCounter = 0;
+    document.getElementById('tapCount').innerText = '0';
+    btn.disabled = true;
+    let t = 10;
+    label.innerText = t + 's';
+    const hand = app.tapHand;
+
+    const iv = setInterval(()=>{
+        t--;
+        label.innerText = t + 's';
+        if (t<=0) {
+            clearInterval(iv);
+            tapActive = false;
+            if (hand === 'right') {
+                app.results.tap.right = app.tapCounter;
+                app.tapHand = 'left';
+                document.getElementById('tapHandBadge').innerText = 'LEFT HAND';
+                label.innerText = 'Start 10s';
+                btn.disabled = false;
+            } else {
+                app.results.tap.left = app.tapCounter;
+                app.tapHand = 'right';
+                document.getElementById('tapHandBadge').innerText = 'RIGHT HAND';
+                label.innerText = 'Complete';
+                btn.disabled = true;
+                const st = document.getElementById('status-tap');
+                st.className = 'status-badge status-success';
+                st.innerText = 'Done';
+                updateProgress();
+            }
+        }
+    },1000);
+}
+
+/* ========= VOICE TEST ========= */
+let voiceMediaStream = null;
+let voiceRecorder = null;
+let voiceChunks = [];
+let voiceBusy = false;
+
+function startVoiceRecording() {
+    if (voiceBusy) return;
+    voiceBusy = true;
+
+    const index = app.voiceSampleIndex;
+    if (index > 2) { voiceBusy = false; return; }
+
+    const promptTitle = document.getElementById('voicePromptTitle');
+    const promptText = document.getElementById('voicePromptText');
+    promptTitle.innerText = 'Sample ' + (index+1) + ':';
+    promptText.innerText = voicePrompts[index];
+
+    const btn = document.getElementById('voiceStartBtn');
+    const label = document.getElementById('voiceStartLabel');
+    const anotherBtn = document.getElementById('voiceNewSampleBtn');
+    anotherBtn.disabled = true;
+    btn.disabled = true;
+
+    navigator.mediaDevices.getUserMedia({ audio:true })
+        .then(stream => {
+            voiceMediaStream = stream;
+            const ac = new (window.AudioContext || window.webkitAudioContext)();
+            const analyser = ac.createAnalyser();
+            const src = ac.createMediaStreamSource(stream);
+            src.connect(analyser);
+            analyser.fftSize = 2048;
+
+            const canvas = document.getElementById('voiceCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+
+            let jitterSum = 0, frames = 0;
+
+            function draw() {
+                if (!voiceBusy) return;
+                requestAnimationFrame(draw);
+                const arr = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(arr);
+                ctx.fillStyle = 'rgba(5,8,25,0.9)';
+                ctx.fillRect(0,0,canvas.width,canvas.height);
+                for (let i=0;i<arr.length;i++) {
+                    const x = i/arr.length*canvas.width;
+                    const h = arr[i]/2;
+                    ctx.fillStyle = `hsl(${i/arr.length*360}, 90%, 55%)`;
+                    ctx.fillRect(x, canvas.height - h, canvas.width/arr.length, h);
+                    if (i>0) jitterSum += Math.abs(arr[i]-arr[i-1]);
+                }
+                frames++;
+            }
+            draw();
+
+            voiceRecorder = new MediaRecorder(stream);
+            voiceChunks = [];
+            voiceRecorder.ondataavailable = e=>voiceChunks.push(e.data);
+            voiceRecorder.start();
+
+            let t = 5;
+            label.innerText = t + 's';
+            const timer = setInterval(()=>{
+                t--; label.innerText = t + 's';
+                if (t<=0) {
+                    clearInterval(timer);
+                    voiceRecorder.stop();
+                    stream.getTracks().forEach(tr=>tr.stop());
+                    voiceBusy = false;
+                    const jitter = Number((jitterSum/frames/100).toFixed(2));
+                    const blob = new Blob(voiceChunks,{type:'audio/webm'});
+                    const url = URL.createObjectURL(blob);
+                    app.results.voice.samples.push({ url, jitter });
+                    renderVoiceSamples();
+
+                    app.voiceSampleIndex++;
+                    if (app.voiceSampleIndex >= 3) {
+                        const jitters = app.results.voice.samples.map(s=>s.jitter);
+                        if (jitters.length) {
+                            app.results.voice.jitter =
+                                Number((jitters.reduce((a,b)=>a+b,0)/jitters.length).toFixed(2));
+                        }
+                        label.innerText = 'Complete';
+                        btn.disabled = true;
+                        anotherBtn.disabled = true;
+                        const st = document.getElementById('status-voice');
+                        st.className = 'status-badge status-success';
+                        st.innerText = 'Done';
+                        updateProgress();
+                    } else {
+                        label.innerText = 'Record 5s';
+                        btn.disabled = false;
+                        anotherBtn.disabled = false;
+                    }
+                }
+            },1000);
+        })
+        .catch(() => {
+            voiceBusy = false;
+            document.getElementById('voiceStartLabel').innerText = 'Mic error';
+        });
+}
+
+function addAnotherVoiceSample() {
+    if (app.voiceSampleIndex < 3 && !voiceBusy) startVoiceRecording();
+}
+
+function renderVoiceSamples() {
+    const wrap = document.getElementById('voiceSamples');
+    wrap.innerHTML = '';
+    app.results.voice.samples.forEach((s, i)=>{
+        const div = document.createElement('div');
+        div.className = 'audio-player';
+        div.innerHTML =
+            `<small>Sample ${i+1}: ${voicePrompts[i]}</small>
+             <audio controls src="${s.url}" style="width:100%; margin-top:4px;"></audio>
+             <small>Jitter: ${s.jitter}%</small>`;
+        wrap.appendChild(div);
+    });
+}
+
+/* ========= GAIT – GYRO ========= */
+function startGaitGyro() {
+    const btn = document.getElementById('gaitStartBtn');
+    btn.disabled = true;
+    const canvas = document.getElementById('gaitCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+
+    let stepTimes = [];
+    let lastPeak = 0;
+    let t = 20;
+
+    const handler = (e) => {
+        const ax = e.acceleration?.x || 0;
+        const ay = e.acceleration?.y || 0;
+        const az = e.acceleration?.z || 0;
+        const mag = Math.sqrt(ax*ax+ay*ay+az*az);
+        if (mag>1.4 && Date.now()-lastPeak>300) {
+            if (lastPeak) stepTimes.push(Date.now()-lastPeak);
+            lastPeak = Date.now();
+        }
+
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = 'rgba(0,217,255,0.25)';
+        const h = Math.min(mag*30, canvas.height);
+        ctx.fillRect(0, canvas.height-h, canvas.width, h);
+    };
+
+    window.addEventListener('devicemotion', handler);
+
+    const timer = setInterval(()=>{
+        t--;
+        if (t<=0) {
+            clearInterval(timer);
+            window.removeEventListener('devicemotion', handler);
+            if (stepTimes.length>1) {
+                const avg = stepTimes.reduce((a,b)=>a+b,0)/stepTimes.length;
+                const varr = stepTimes.reduce((s,x)=>s+(x-avg)**2,0)/stepTimes.length;
+                app.results.gait.variability = Number((Math.sqrt(varr)/avg*100).toFixed(2));
+            }
+            btn.disabled = false;
+            btn.innerText = 'Complete';
+            const st = document.getElementById('status-gait');
+            st.className = 'status-badge status-success';
+            st.innerText = 'Done';
+            updateProgress();
+        }
+    },1000);
+}
+
+/* ========= GAIT – CAMERA ========= */
+let gaitStream = null;
+function startGaitCamera() {
+    const btn = document.getElementById('gaitCamStartBtn');
+    btn.disabled = true;
+    const facingMode = app.gaitFacing;
+    navigator.mediaDevices.getUserMedia({ video:{ facingMode } })
+        .then(stream=>{
+            gaitStream = stream;
+            const vid = document.getElementById('gaitVideo');
+            vid.srcObject = stream;
+            vid.play();
+            let t = 10;
+            btn.innerText = 'Recording 10s';
+            const timer = setInterval(()=>{
+                t--;
+                if (t<=0) {
+                    clearInterval(timer);
+                    stream.getTracks().forEach(tr=>tr.stop());
+                    app.results.gaitCam.recorded = true;
+                    btn.innerText = 'Complete';
+                    const st = document.getElementById('status-gait-cam');
+                    st.className = 'status-badge status-success';
+                    st.innerText = 'Done';
+                    updateProgress();
+                }
+            },1000);
+        })
+        .catch(()=>{
+            btn.disabled = false;
+            btn.innerText = 'Camera error';
+        });
+}
+
+function toggleGaitCameraFacing() {
+    app.gaitFacing = app.gaitFacing === 'environment' ? 'user' : 'environment';
+    if (gaitStream) gaitStream.getTracks().forEach(tr=>tr.stop());
+}
+
+/* ========= SPIRAL ========= */
+let spiralPoints = [];
+let drawing = false;
+
+function initSpiralCanvases() {
+    const t = document.getElementById('spiralTemplate');
+    const c = document.getElementById('spiralCanvas');
+    t.width = c.width = t.offsetWidth;
+    t.height = c.height = t.offsetHeight;
+    const ctxT = t.getContext('2d');
+
+    ctxT.clearRect(0,0,t.width,t.height);
+    ctxT.strokeStyle = 'rgba(156, 163, 175,0.7)';
+    ctxT.lineWidth = 1.5;
+    ctxT.beginPath();
+    const cx = t.width/2, cy = t.height/2;
+    for (let a=0;a<Math.PI*2*3;a+=0.08) {
+        const r = 5 + 7*a;
+        const x = cx + r*Math.cos(a);
+        const y = cy + r*Math.sin(a);
+        if (a===0) ctxT.moveTo(x,y); else ctxT.lineTo(x,y);
+    }
+    ctxT.stroke();
+
+    c.addEventListener('pointerdown', e => {
+        drawing = true;
+        spiralPoints = [];
+        addSpiralPoint(e, c);
+    });
+    c.addEventListener('pointermove', e => {
+        if (!drawing) return;
+        addSpiralPoint(e, c);
+        drawSpiralStroke();
+    });
+    window.addEventListener('pointerup', ()=>drawing=false);
+}
+
+function addSpiralPoint(e, canvas) {
+    const rect = canvas.getBoundingClientRect();
+    spiralPoints.push({ x: e.clientX-rect.left, y: e.clientY-rect.top });
+}
+function drawSpiralStroke() {
+    const c = document.getElementById('spiralCanvas');
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    ctx.strokeStyle = '#00d9ff';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    spiralPoints.forEach((p,i)=>{
+        if (i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
+    });
+    ctx.stroke();
+}
+function clearSpiralCanvas() {
+    spiralPoints = [];
+    const c = document.getElementById('spiralCanvas');
+    c.getContext('2d').clearRect(0,0,c.width,c.height);
+}
+
+function completeSpiral() {
+    if (spiralPoints.length < 40) {
+        alert('Please draw a complete spiral over the template.');
+        return;
+    }
+    let pathLen = 0;
+    for (let i=1;i<spiralPoints.length;i++) {
+        const dx = spiralPoints[i].x-spiralPoints[i-1].x;
+        const dy = spiralPoints[i].y-spiralPoints[i-1].y;
+        pathLen += Math.sqrt(dx*dx+dy*dy);
+    }
+    const ideal = 800; // heuristic
+    let smoothness = Math.max(0, 100 - Math.abs(pathLen-ideal)/ideal*100);
+    smoothness = Number(smoothness.toFixed(2));
+    app.results.spiral.smoothness = smoothness;
+    const st = document.getElementById('status-spiral');
+    st.className = 'status-badge status-success';
+    st.innerText = 'Done';
+    updateProgress();
+}
+
+/* ========= FACIAL ========= */
+function startFaceTest() {
+    const btn = document.getElementById('faceStartBtn');
+    btn.disabled = true;
+    navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user' } })
+        .then(stream=>{
+            const v = document.getElementById('faceVideo');
+            v.srcObject = stream;
+            v.play();
+            let prev = null, blinkCount = 0, frames=0;
+            const interval = setInterval(()=>{
+                frames++;
+                const tmp = document.createElement('canvas');
+                tmp.width = 40; tmp.height = 40;
+                const ctx = tmp.getContext('2d');
+                ctx.drawImage(v,0,0,40,40);
+                const data = ctx.getImageData(0,0,40,40).data;
+                let sum = 0;
+                for (let i=0;i<data.length;i+=4) sum += (data[i]+data[i+1]+data[i+2])/3;
+                const bright = sum/(40*40);
+                if (prev !== null && Math.abs(bright-prev) > 25) blinkCount++;
+                prev = bright;
+            },100);
+
+            setTimeout(()=>{
+                clearInterval(interval);
+                stream.getTracks().forEach(tr=>tr.stop());
+                app.results.face.activity = Math.min(100, blinkCount*8);
+                btn.innerText = 'Complete';
+                const st = document.getElementById('status-face');
+                st.className = 'status-badge status-success';
+                st.innerText = 'Done';
+                updateProgress();
+            },10000);
+        })
+        .catch(()=>{
+            btn.disabled = false;
+            btn.innerText = 'Camera error';
+        });
+}
+
+/* ========= REPORT ========= */
+let radarChart;
+function buildReport() {
+    document.getElementById('rep-name').innerText = app.patient.name || '--';
+    document.getElementById('rep-age').innerText = app.patient.age || '--';
+    document.getElementById('rep-gender').innerText = app.patient.gender || '--';
+    document.getElementById('rep-contact').innerText = app.patient.contact || '--';
+
+    const r = app.results;
+    const missedList = Object.keys(app.missed).filter(k=>app.missed[k]).map(k=>k.toUpperCase());
+    document.getElementById('rep-missed').innerText = missedList.length ? missedList.join(', ') : 'None';
+
+    const tremorAvg = (r.tremor.right + r.tremor.left)/2 || 0;
+    document.getElementById('rep-tremorAmp').innerText = tremorAvg.toFixed(2) + ' m/s²';
+    document.getElementById('rep-tremorFreq').innerText = r.tremor.freq.toFixed(1) + ' Hz';
+    document.getElementById('rep-tapR').innerText = r.tap.right ? r.tap.right + ' taps' : '--';
+    document.getElementById('rep-tapL').innerText = r.tap.left ? r.tap.left + ' taps' : '--';
+    document.getElementById('rep-voice').innerText = r.voice.jitter ? r.voice.jitter.toFixed(2) + ' %' : '--';
+    document.getElementById('rep-gait').innerText = r.gait.variability ? r.gait.variability.toFixed(2) + ' %' : '--';
+    document.getElementById('rep-spiral').innerText = r.spiral.smoothness ? r.spiral.smoothness.toFixed(2) + ' %' : '--';
+    document.getElementById('rep-face').innerText = r.face.activity ? r.face.activity.toFixed(1) + ' %' : '--';
+
+    const risk = computeRisk();
+    document.getElementById('rep-risk').innerText = risk + ' %';
+
+    const interpret = [];
+    if (tremorAvg>1 && r.tremor.freq>=4 && r.tremor.freq<=6)
+        interpret.push('Tremor amplitude and frequency are compatible with a Parkinsonian resting tremor.');
+    else if (tremorAvg>0.5)
+        interpret.push('Mild tremor present but pattern is not clearly Parkinsonian.');
+    else
+        interpret.push('No significant resting tremor detected.');
+
+    const meanTap = (r.tap.right + r.tap.left)/2 || 0;
+    if (meanTap && meanTap<30)
+        interpret.push('Finger tapping speed suggests bradykinesia.');
+    else if (meanTap)
+        interpret.push('Finger tapping speed is within normal range.');
+
+    if (r.voice.jitter>1.5)
+        interpret.push('Voice jitter is increased, which may indicate dysphonia.');
+    if (r.gait.variability>15)
+        interpret.push('Step time variability is high, suggesting gait instability.');
+
+    if (r.spiral.smoothness && r.spiral.smoothness<80)
+        interpret.push('Spiral smoothness is reduced, consistent with micrographia or tremor-related drawing impairment.');
+
+    if (missedList.length)
+        interpret.push('One or more modules were not completed and are listed as missed; interpret risk with caution.');
+
+    interpret.push('This output is for research screening only and cannot be used as a stand-alone diagnostic decision.');
+
+    document.getElementById('rep-interpret').innerHTML =
+        '<ul style="padding-left:18px; margin:0;">' +
+        interpret.map(t=>'<li>'+t+'</li>').join('') +
+        '</ul>';
+
+    const radarData = [
+        Math.min(tremorAvg*30,100),
+        Math.min(100 - Math.min(meanTap,50)/50*100,100),
+        Math.min(r.voice.jitter*20,100),
+        Math.min(r.gait.variability*4,100),
+        Math.min(100-r.spiral.smoothness,100),
+        Math.min(r.face.activity,100)
+    ];
+
+    const ctx = document.getElementById('radarChart').getContext('2d');
+    if (radarChart) radarChart.destroy();
+    radarChart = new Chart(ctx,{
+        type:'radar',
+        data:{
+            labels:['Tremor','Motor','Voice','Gait','Spiral','Facial'],
+            datasets:[{
+                label:'Severity / risk',
+                data:radarData,
+                backgroundColor:'rgba(0,217,255,0.25)',
+                borderColor:'#00d9ff',
+                pointBackgroundColor:'#00d9ff'
+            }]
+        },
+        options:{
+            responsive:true,
+            scales:{ r:{
+                min:0,max:100,
+                grid:{color:'rgba(255,255,255,0.15)'},
+                ticks:{color:'#9ca3af'},
+                pointLabels:{color:'#e5e7eb'}
+            }}
+        }
+    });
+}
+
+/* ========= PDF ========= */
+function downloadPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const risk = computeRisk();
+
+    doc.setFillColor(0,217,255);
+    doc.rect(0,0,210,30,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(18);
+    doc.text('NeuroSynapse-PD Screening Report',10,19);
+
+    doc.setTextColor(0,0,0);
+    doc.setFontSize(11);
+    doc.text(`Patient: ${app.patient.name || '--'} | Age: ${app.patient.age || '--'} | ${app.patient.gender || '--'}`,10,40);
+    doc.text(`Contact: ${app.patient.contact || '--'}`,10,47);
+
+    let y = 60;
+    const r = app.results;
+    const tremorAvg = (r.tremor.right + r.tremor.left)/2 || 0;
+    doc.text(`Tremor amplitude (avg): ${tremorAvg.toFixed(2)} m/s²`,10,y); y+=6;
+    doc.text(`Tremor frequency: ${r.tremor.freq.toFixed(1)} Hz`,10,y); y+=6;
+    doc.text(`Right taps: ${r.tap.right || '--'} /10s`,10,y); y+=6;
+    doc.text(`Left taps: ${r.tap.left || '--'} /10s`,10,y); y+=6;
+    doc.text(`Voice jitter: ${r.voice.jitter || 0} %`,10,y); y+=6;
+    doc.text(`Gait variability: ${r.gait.variability || 0} %`,10,y); y+=6;
+    doc.text(`Spiral smoothness: ${r.spiral.smoothness || 0} %`,10,y); y+=6;
+    doc.text(`Facial activity: ${r.face.activity || 0} %`,10,y); y+=10;
+    doc.setFontSize(14);
+    doc.setTextColor(255,71,87);
+    doc.text(`Overall PD risk: ${risk} %`,10,y); y+=14;
+
+    doc.setFontSize(9);
+    doc.setTextColor(0,0,0);
+    const missed = Object.keys(app.missed).filter(k=>app.missed[k]);
+    doc.text('Missed modules: ' + (missed.length? missed.join(', '): 'None'),10,y); y+=10;
+    doc.text('DISCLAIMER: Research prototype only. Not for diagnostic use. Combine with specialist neurological assessment.',10,y);
+
+    doc.save((app.patient.name || 'Patient') + '_NeuroSynapse_PD_Report.pdf');
+}
+
+/* ========= RESET ========= */
+function resetAll() {
+    location.reload();
+}
+
+/* ========= INITIALIZE SPIRAL AFTER LOAD ========= */
+window.addEventListener('load', initSpiralCanvases);
+</script>
+
+</body>
+</html>
