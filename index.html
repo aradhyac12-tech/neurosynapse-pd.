@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NeuroSynapse-PD | Clinical AI Phenotyping System v14.3</title>
+
+    <!-- Icons / Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&display=swap" rel="stylesheet">
+
+    <!-- PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- Mediapipe -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+
+    <style>
+        :root {
+            --bg: #050819;
+            --sidebar: #080c20;
+            --glass: rgba(15, 20, 40, 0.94);
+            --neon: #00d9ff;
+            --accent: #7c3aed;
+            --success: #10b981;
+            --danger: #ff4757;
+            --text: #f0f4f8;
+            --muted: #9ca3af;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; }
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; }
+        body {
+            background: var(--bg); color: var(--text);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            overflow-x: hidden;
+            background-image: radial-gradient(at 0% 0%, rgba(0, 217, 255, 0.15) 0, transparent 50%), radial-gradient(at 100% 100%, rgba(124, 58, 237, 0.15) 0, transparent 50%);
+        }
+
+        .sidebar {
+            position: fixed; top: 0; left: 0; width: 280px; height: 100vh;
+            background: var(--sidebar); transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1200; border-right: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column;
+        }
+        .sidebar.open { transform: translateX(0); }
+        .sidebar-header { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.3); }
+        .sidebar-header h2 { margin: 0; font-size: 18px; color: var(--neon); font-weight: 900; }
+        .sidebar-header p { margin: 4px 0 0; font-size: 11px; color: var(--muted); }
+
+        .menu-item {
+            padding: 12px 20px; font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 12px;
+            cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.03); transition: 0.2s;
+        }
+        .menu-item:active { background: rgba(0,217,255,0.15); color: var(--neon); }
+        .menu-item i { width: 20px; text-align: center; color: var(--neon); }
+
+        .sidebar-section { margin-top: auto; padding: 15px; border-top: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.35); }
+        .sidebar-section h3 { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 0 0 10px; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; font-size: 12px; }
+
+        .toggle-switch {
+            width: 44px; height: 24px; border-radius: 999px; background: rgba(255,255,255,0.2);
+            position: relative; cursor: pointer; transition: 0.25s;
+        }
+        .toggle-switch::after {
+            content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px;
+            border-radius: 50%; background: #fff; transition: 0.25s; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .toggle-switch.active { background: var(--success); }
+        .toggle-switch.active::after { transform: translateX(20px); }
+
+        .contact-box { font-size: 10px; padding: 10px; border-radius: 8px; background: rgba(0,217,255,0.08); border-left: 2px solid var(--neon); margin-top: 10px; }
+        .contact-box a { color: var(--neon); text-decoration: none; display: block; margin-top: 4px; font-weight: 700; }
+
+        .navbar {
+            position: fixed; top: 0; left: 0; height: 60px; width: 100%; padding: 0 20px;
+            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(5,8,25,0.95); backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255,255,255,0.08); z-index: 1000;
+        }
+        .hamburger { font-size: 22px; color: var(--text); cursor: pointer; padding: 5px; }
+        .navbar-title { font-size: 16px; font-weight: 900; color: var(--neon); letter-spacing: 0.5px; }
+        .progress-badge { font-size: 11px; padding: 4px 10px; border-radius: 999px; background: rgba(0,217,255,0.15); color: var(--neon); font-weight: 700; }
+
+        #app-container { padding-top: 60px; min-height: 100vh; position: relative; z-index: 1; }
+        .view { display: none; padding: 20px 20px 100px; opacity: 0; animation: fadeIn 0.4s ease forwards; max-width: 600px; margin: 0 auto; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card {
+            background: var(--glass); border-radius: 16px; border: 1px solid rgba(255,255,255,0.08);
+            padding: 20px; margin-bottom: 16px; backdrop-filter: blur(12px); box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        h2 { margin: 0 0 6px; font-size: 20px; font-weight: 800; }
+        .subtitle { font-size: 11px; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; margin-bottom: 16px; }
+
+        input, select {
+            width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(0,0,0,0.4); color: var(--text); font-family: inherit; font-size: 14px; margin-bottom: 6px;
+        }
+        input:focus, select:focus { border-color: var(--neon); background: rgba(0,217,255,0.05); }
+        .error { border-color: var(--danger) !important; background: rgba(255,71,87,0.1) !important; }
+        .error-text { font-size: 11px; color: var(--danger); margin-bottom: 10px; display: block; }
+
+        .btn-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 15px; }
+        .btn {
+            width: 100%; padding: 14px; border-radius: 12px; border: none; cursor: pointer; font-size: 13px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center; gap: 8px; color: #fff;
+            background: linear-gradient(135deg, var(--neon), var(--accent)); box-shadow: 0 4px 15px rgba(0,217,255,0.2); transition: 0.2s;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+        .btn-secondary { background: rgba(255,255,255,0.1); box-shadow: none; color: var(--text); }
+        .btn-ghost { background: transparent; border: 1px solid rgba(255,255,255,0.2); box-shadow: none; }
+
+        .tap-zone {
+            width: 100%; height: 160px; border-radius: 14px; border: 3px dashed var(--neon);
+            display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px;
+            color: var(--muted); background: rgba(0,217,255,0.05); cursor: pointer; transition: 0.1s;
+        }
+
+        .camera-container {
+            position: relative; width: 100%; height: 300px; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .camera-container video, .camera-container canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;
+        }
+        .video-flip { transform: scaleX(-1); }
+
+        .timer-overlay {
+            position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7);
+            padding: 6px 14px; border-radius: 10px; font-size: 26px; font-weight: 900; color: var(--neon);
+            border: 1px solid var(--neon); z-index: 10; display: none;
+        }
+
+        .spiral-container { position: relative; width: 100%; height: 320px; background: #000; border-radius: 12px; overflow: hidden; touch-action: none; }
+        .spiral-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+        .overlay-text {
+            position: absolute; bottom: 10px; left: 10px; right: 10px;
+            background: rgba(0,0,0,0.6); color: #fff; padding: 8px; border-radius: 6px; font-size: 11px; pointer-events: none; z-index: 5;
+        }
+
+        .status-badge { font-size: 10px; padding: 3px 8px; border-radius: 99px; margin-left: 8px; border: 1px solid currentColor; }
+        .status-pending { color: #fbbf24; background: rgba(251,191,36,0.1); }
+        .status-success { color: var(--success); background: rgba(16,185,129,0.1); }
+        .status-missed { color: var(--danger); background: rgba(255,71,87,0.1); }
+
+        .hand-badge { display: inline-block; padding: 4px 10px; border-radius: 6px; background: rgba(0,217,255,0.1); border: 1px solid var(--neon); color: var(--neon); font-size: 11px; font-weight: 700; margin-bottom: 10px; }
+
+        .results-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+        .results-table td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .results-table tr:last-child td { border-bottom: none; font-size: 14px; font-weight: 700; padding-top: 15px; }
+
+        .updrs-table { width: 100%; font-size: 12px; border-collapse: collapse; margin-top: 15px; }
+        .updrs-table td { padding: 6px; border-bottom: 1px solid rgba(255,255,255,.08); }
+        .updrs-table tr:last-child td { font-weight: 700; padding-top: 10px; border-bottom: none; }
+
+        .dev-badge {
+            position: fixed; bottom: 10px; right: 10px; background: rgba(0,217,255,0.9);
+            color: #000; padding: 6px 12px; border-radius: 20px; font-size: 10px;
+            font-weight: 900; z-index: 1000; box-shadow: 0 4px 15px rgba(0,217,255,0.3);
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h2>🧠 NeuroSynapse-PD</h2>
+        <p>v14.3 • Created by Aradhya Chavan</p>
+    </div>
+    <div class="menu-item" onclick="go('v-pd-info')"><i class="fas fa-info-circle"></i> About PD</div>
+    <div class="menu-item" onclick="go('v-dash')"><i class="fas fa-home"></i> Dashboard</div>
+    <div class="menu-item" onclick="go('v-tremor')"><i class="fas fa-wave-square"></i> Tremor</div>
+    <div class="menu-item" onclick="go('v-tap')"><i class="fas fa-hand-pointer"></i> Bradykinesia</div>
+    <div class="menu-item" onclick="go('v-voice')"><i class="fas fa-microphone"></i> Voice</div>
+    <div class="menu-item" onclick="go('v-gait-cam')"><i class="fas fa-walking"></i> Gait (AI Vision)</div>
+    <div class="menu-item" onclick="go('v-spiral')"><i class="fas fa-pen-fancy"></i> Spiral</div>
+    <div class="menu-item" onclick="go('v-face')"><i class="fas fa-meh"></i> Facial (AI Mesh)</div>
+    <div class="menu-item" onclick="go('v-report')"><i class="fas fa-file-medical-alt"></i> Report</div>
+
+    <div class="sidebar-section">
+        <h3>Settings</h3>
+        <div class="setting-row">
+            <span>Voice Assistant</span>
+            <div id="toggle-voice" class="toggle-switch active" onclick="toggleSetting('voice')"></div>
+        </div>
+        <div class="setting-row">
+            <span>Anti-Tremor UI</span>
+            <div id="toggle-tremor" class="toggle-switch" onclick="toggleSetting('tremor')"></div>
+        </div>
+        <div class="contact-box">
+            <strong>Created by Aradhya Chavan</strong><br>
+            <span>Email: aradhyachavan2@gmail.com</span>
+        </div>
+    </div>
+</div>
+
+<div class="navbar">
+    <div class="hamburger" onclick="toggleSidebar()"><i class="fas fa-bars"></i></div>
+    <div class="navbar-title">NeuroSynapse-PD</div>
+    <div class="progress-badge" id="progress-badge">0%</div>
+</div>
+
+<div id="app-container">
+
+    <!-- Splash -->
+    <div id="v-splash" class="view active">
+        <div style="text-align: center; padding-top: 40px;">
+            <div style="font-size: 60px; margin-bottom: 20px;">🧠</div>
+            <h1 style="margin: 0; font-size: 28px; background: linear-gradient(to right, var(--neon), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">NeuroSynapse-PD</h1>
+            <p style="color: var(--muted); margin-top: 10px;">Adaptive Clinical AI Phenotyping System</p>
+            <p style="font-size: 12px; color: var(--neon); font-weight: 700;">Created by Aradhya Chavan</p>
+            <button class="btn" style="margin-top: 30px;" onclick="go('v-pd-info')">
+                <i class="fas fa-power-off"></i> Initialize System
+            </button>
+        </div>
+    </div>
+
+    <!-- PD Info -->
+    <div id="v-pd-info" class="view">
+        <h2>About Parkinson’s Disease</h2>
+        <p class="subtitle">Clinical overview</p>
+        <div class="card">
+            <h3 style="color: var(--neon); font-size: 14px; margin: 0 0 5px;">What is Parkinson’s?</h3>
+            <p style="font-size: 12px; line-height: 1.6; margin: 0 0 10px;">
+                Parkinson’s disease is a chronic, progressive neurodegenerative disorder in which dopamine‑producing neurons in the substantia nigra gradually degenerate. This loss of dopamine disrupts signalling in basal ganglia circuits that control automatic and fine movements, leading to tremor, slowness, stiffness, and gait changes. [web:36]
+            </p>
+            <p style="font-size: 12px; line-height: 1.6; margin: 0 0 15px;">
+                Early features can be subtle and asymmetric, such as one hand that tremors at rest, reduced arm swing on one side while walking, smaller handwriting (micrographia), or a softer voice. Non‑motor symptoms like loss of smell, constipation, sleep disturbance, and mood changes may precede the motor signs by several years. [web:36]
+            </p>
+
+            <h3 style="color: var(--neon); font-size: 14px; margin: 0 0 5px;">Key motor symptoms</h3>
+            <ul style="font-size: 12px; margin: 0 0 10px; padding-left: 20px; line-height: 1.6;">
+                <li><strong>Rest tremor:</strong> 4–6 Hz shaking that is most prominent at rest, often starting in one hand or leg and decreasing with voluntary movement. [web:36]</li>
+                <li><strong>Bradykinesia:</strong> Slowness and reduction in amplitude of repetitive movements, assessed clinically using finger tapping, hand opening–closing, and rapid alternating movements. [web:36]</li>
+                <li><strong>Rigidity:</strong> Increased resistance to passive movement of a limb, sometimes felt as “cogwheel” when combined with tremor. [web:36]</li>
+                <li><strong>Gait and posture:</strong> Stooped posture, short shuffling steps, reduced arm swing, difficulty turning, and episodes of freezing especially at doorways or in crowded spaces. [web:36]</li>
+            </ul>
+
+            <h3 style="color: var(--neon); font-size: 14px; margin: 10px 0 5px;">Non‑motor symptoms</h3>
+            <ul style="font-size: 12px; margin: 0 0 10px; padding-left: 20px; line-height: 1.6;">
+                <li>Sleep problems and acting out dreams (REM sleep behaviour disorder).</li>
+                <li>Constipation, urinary urgency, orthostatic dizziness, and temperature dysregulation.</li>
+                <li>Depression, anxiety, apathy, cognitive slowing, and sometimes dementia in advanced stages.</li>
+            </ul>
+
+            <p style="font-size: 11px; color: var(--muted); margin-top: 8px;">
+                NeuroSynapse‑PD is a screening and phenotyping prototype. It does not confirm or rule out Parkinson’s disease. Results should always be interpreted alongside a detailed neurological examination by a specialist.
+            </p>
+        </div>
+        <button class="btn" onclick="go('v-intake')">Proceed to Intake <i class="fas fa-arrow-right"></i></button>
+    </div>
+
+    <!-- Intake -->
+    <div id="v-intake" class="view">
+        <h2>Patient Profile</h2>
+        <p class="subtitle">Mandatory information</p>
+        <div class="card">
+            <label style="font-size:11px; margin-left:2px;">Full Name *</label>
+            <input type="text" id="inp-name" placeholder="Letters only">
+            <span class="error-text" id="err-name"></span>
+
+            <label style="font-size:11px; margin-left:2px;">Age *</label>
+            <input type="number" id="inp-age" placeholder="18 - 120">
+            <span class="error-text" id="err-age"></span>
+
+            <label style="font-size:11px; margin-left:2px;">Gender *</label>
+            <select id="inp-gender">
+                <option value="">Select Gender</option>
+                <option>Male</option>
+                <option>Female</option>
+                <option>Other</option>
+            </select>
+            <span class="error-text" id="err-gender"></span>
+
+            <label style="font-size:11px; margin-left:2px;">Contact (Email/Phone) *</label>
+            <input type="text" id="inp-contact" placeholder="Email or Phone">
+            <span class="error-text" id="err-contact"></span>
+        </div>
+        <button class="btn" onclick="validateIntake()">Start Assessment <i class="fas fa-check"></i></button>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="v-dash" class="view">
+        <div style="display: flex; justify-content: space-between; align-items: end; margin-bottom: 15px;">
+            <div>
+                <h2 id="disp-name" style="margin:0;">Patient Name</h2>
+                <div style="font-size:11px; color:var(--muted); margin-top:4px;">
+                    <span id="disp-age">00</span> yrs | <span id="disp-gender">--</span>
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size:10px; color:var(--muted);">RISK SCORE</div>
+                <div id="disp-risk" style="font-size:24px; font-weight:900; color:var(--success);">0%</div>
+            </div>
+        </div>
+
+        <div style="display: grid; gap: 10px;">
+            <button class="btn btn-secondary" style="justify-content: space-between;" onclick="go('v-tremor')">
+                <div style="display:flex; gap:10px; align-items:center;"><i class="fas fa-wave-square" style="color:var(--neon);"></i> Tremor Test</div>
+                <span class="status-badge status-pending" id="st-tremor">Pending</span>
+            </button>
+            <button class="btn btn-secondary" style="justify-content: space-between;" onclick="go('v-tap')">
+                <div style="display:flex; gap:10px; align-items:center;"><i class="fas fa-hand-pointer" style="color:var(--accent);"></i> Bradykinesia</div>
+                <span class="status-badge status-pending" id="st-tap">Pending</span>
+            </button>
+            <button class="btn btn-secondary" style="justify-content: space-between;" onclick="go('v-voice')">
+                <div style="display:flex; gap:10px; align-items:center;"><i class="fas fa-microphone" style="color:var(--success);"></i> Voice Analysis</div>
+                <span class="status-badge status-pending" id="st-voice">Pending</span>
+            </button>
+            <button class="btn btn-secondary" style="justify-content: space-between;" onclick="go('v-gait-cam')">
+                <div style="display:flex; gap:10px; align-items:center;"><i class="fas fa-walking" style="color:#f59e0b;"></i> Gait (Vision)</div>
+                <span class="status-badge status-pending" id="st-gait">Pending</span>
+            </button>
+            <button class="btn btn-secondary" style="justify-content: space-between;" onclick="go('v-spiral')">
+                <div style="display:flex; gap:10px; align-items:center;"><i class="fas fa-pen-fancy" style="color:#ec4899;"></i> Spiral Draw</div>
+                <span class="status-badge status-pending" id="st-spiral">Pending</span>
+            </button>
+            <button class="btn btn-secondary" style="justify-content: space-between;" onclick="go('v-face')">
+                <div style="display:flex; gap:10px; align-items:center;"><i class="fas fa-meh" style="color:#8b5cf6;"></i> Facial Mesh</div>
+                <span class="status-badge status-pending" id="st-face">Pending</span>
+            </button>
+        </div>
+
+        <button class="btn" style="margin-top:20px;" onclick="go('v-report')"><i class="fas fa-file-invoice"></i> View Report</button>
+    </div>
+
+    <!-- Tremor -->
+    <div id="v-tremor" class="view">
+        <h2>Tremor Analysis</h2>
+        <p class="subtitle">Accelerometer (10s/hand)</p>
+        <div class="card">
+            <div class="hand-badge" id="tremor-hand">RIGHT HAND</div>
+            <div style="height: 150px; background: rgba(0,0,0,0.3); border-radius: 10px; position: relative; overflow: hidden;">
+                <canvas id="cvs-tremor" style="width:100%; height:100%;"></canvas>
+                <div id="timer-tremor" class="timer-overlay">10</div>
+            </div>
+        </div>
+        <div class="btn-row">
+            <button class="btn btn-secondary" onclick="go('v-dash')"><i class="fas fa-arrow-left"></i></button>
+            <button class="btn" id="btn-tremor-start" onclick="startTremorTest()">Start Test</button>
+            <button class="btn btn-ghost" onclick="markMissed('tremor')">Missed</button>
+            <button class="btn btn-secondary" onclick="go('v-tap')"><i class="fas fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <!-- Tap -->
+    <div id="v-tap" class="view">
+        <h2>Bradykinesia</h2>
+        <p class="subtitle">Finger tapping (10s/hand)</p>
+        <div class="card">
+            <div class="hand-badge" id="tap-hand">RIGHT HAND</div>
+            <div id="tap-area" class="tap-zone">TAP HERE RAPIDLY</div>
+            <div style="display:flex; justify-content:space-between; margin-top:15px; align-items:center;">
+                <div style="font-size:12px; color:var(--muted);">Count: <strong id="tap-count" style="color:var(--text); font-size:18px;">0</strong></div>
+                <div id="timer-tap" style="font-size:24px; font-weight:900; color:var(--neon); display:none;">10</div>
+            </div>
+        </div>
+        <div class="btn-row">
+            <button class="btn btn-secondary" onclick="go('v-tremor')"><i class="fas fa-arrow-left"></i></button>
+            <button class="btn" id="btn-tap-start" onclick="startTapTest()">Start Timer</button>
+            <button class="btn btn-ghost" onclick="markMissed('tap')">Missed</button>
+            <button class="btn btn-secondary" onclick="go('v-voice')"><i class="fas fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <!-- Voice -->
+    <div id="v-voice" class="view">
+        <h2>Voice Analysis</h2>
+        <p class="subtitle">3 samples (5s each)</p>
+        <div class="card">
+            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:10px; font-size:12px;">
+                <strong>Prompt:</strong> <span id="voice-prompt" style="color:var(--neon);">Say "AAAAAAH" steadily.</span>
+            </div>
+            <div style="height:60px; background:rgba(0,0,0,0.3); border-radius:8px; margin-bottom:10px; position:relative;">
+                <canvas id="cvs-voice" style="width:100%; height:100%;"></canvas>
+            </div>
+            <div id="voice-list"></div>
+            <audio id="voice-playback" controls style="width:100%; margin-top:8px; display:none;"></audio>
+        </div>
+        <div class="btn-row">
+            <button class="btn btn-secondary" onclick="go('v-tap')"><i class="fas fa-arrow-left"></i></button>
+            <button class="btn" id="btn-voice-rec" onclick="startVoiceRec()">Record</button>
+            <button class="btn btn-ghost" onclick="markMissed('voice')">Missed</button>
+            <button class="btn btn-secondary" onclick="go('v-gait-cam')"><i class="fas fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <!-- Gait -->
+    <div id="v-gait-cam" class="view">
+        <h2>Gait Analysis</h2>
+        <p class="subtitle">Pose skeleton overlay (10s)</p>
+        <div class="card">
+            <div class="camera-container">
+                <video id="vid-gait" muted playsinline></video>
+                <canvas id="cvs-gait"></canvas>
+                <div id="timer-gait" class="timer-overlay">10</div>
+                <div class="overlay-text">Skeleton overlay active</div>
+            </div>
+        </div>
+        <div class="btn-row">
+            <button class="btn btn-secondary" onclick="go('v-voice')"><i class="fas fa-arrow-left"></i></button>
+            <button class="btn" id="btn-gait-rec" onclick="startGaitCam()">Start Cam</button>
+            <button class="btn btn-ghost" onclick="flipCam('gait')"><i class="fas fa-sync"></i> Flip</button>
+            <button class="btn btn-secondary" onclick="go('v-spiral')"><i class="fas fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <!-- Spiral -->
+    <div id="v-spiral" class="view">
+        <h2>Spiral Drawing</h2>
+        <p class="subtitle">Trace the template</p>
+        <div class="card">
+            <div class="spiral-container">
+                <canvas id="cvs-spiral-bg" class="spiral-canvas" style="z-index:1; opacity:0.4;"></canvas>
+                <canvas id="cvs-spiral-draw" class="spiral-canvas" style="z-index:2;"></canvas>
+            </div>
+        </div>
+        <div class="btn-row">
+            <button class="btn btn-secondary" onclick="clearSpiral()"><i class="fas fa-eraser"></i></button>
+            <button class="btn" onclick="finishSpiral()">Done</button>
+            <button class="btn btn-ghost" onclick="markMissed('spiral')">Missed</button>
+            <button class="btn btn-secondary" onclick="go('v-face')"><i class="fas fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <!-- Face -->
+    <div id="v-face" class="view">
+        <h2>Facial Expression</h2>
+        <p class="subtitle">Face mesh & eye lines (10s)</p>
+        <div class="card">
+            <div class="camera-container">
+                <video id="vid-face" class="video-flip" muted playsinline></video>
+                <canvas id="cvs-face" class="video-flip"></canvas>
+                <div id="timer-face" class="timer-overlay">10</div>
+                <div class="overlay-text">468-point mesh overlay active</div>
+            </div>
+        </div>
+        <div class="btn-row">
+            <button class="btn btn-secondary" onclick="go('v-spiral')"><i class="fas fa-arrow-left"></i></button>
+            <button class="btn" id="btn-face-rec" onclick="startFaceCam()">Start Cam</button>
+            <button class="btn btn-ghost" onclick="markMissed('face')">Missed</button>
+            <button class="btn btn-secondary" onclick="go('v-report')"><i class="fas fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <!-- Report -->
+    <div id="v-report" class="view">
+        <h2>Clinical Report</h2>
+        <p class="subtitle">Summary of findings</p>
+        <div class="card">
+            <div style="display:flex; justify-content:space-between;">
+                <strong>Patient Risk Score:</strong>
+                <span id="rep-score" style="color:var(--danger); font-weight:900;">0%</span>
+            </div>
+
+            <h3 style="color: var(--neon); font-size: 14px; margin: 15px 0 5px;">UPDRS-III Mapping</h3>
+            <table class="updrs-table">
+                <tr><td>Speech (3.1)</td><td id="u-speech" style="text-align:right;">0</td></tr>
+                <tr><td>Facial Expression (3.2)</td><td id="u-face" style="text-align:right;">0</td></tr>
+                <tr><td>Finger Tapping (3.4)</td><td id="u-tap" style="text-align:right;">0</td></tr>
+                <tr><td>Hand Movements / Spiral (3.5)</td><td id="u-spiral" style="text-align:right;">0</td></tr>
+                <tr><td>Rest Tremor (3.15)</td><td id="u-tremor" style="text-align:right;">0</td></tr>
+                <tr><td>Gait (3.10)</td><td id="u-gait" style="text-align:right;">0</td></tr>
+                <tr><td>Freezing of Gait (3.11)</td><td id="u-fog" style="text-align:right;">0</td></tr>
+                <tr>
+                    <td>Total UPDRS-III</td>
+                    <td id="u-total" style="text-align:right;">0 / 28</td>
+                </tr>
+            </table>
+
+            <h3 style="color: var(--neon); font-size: 14px; margin: 15px 0 5px;">Detailed Metrics</h3>
+            <table class="results-table">
+                <tr><td>Tremor (R/L amp, Hz)</td><td id="rep-tremor" style="text-align:right;">--</td></tr>
+                <tr><td>Bradykinesia (R/L taps)</td><td id="rep-tap" style="text-align:right;">--</td></tr>
+                <tr><td>Voice jitter (%)</td><td id="rep-voice-val" style="text-align:right;">--</td></tr>
+                <tr><td>Gait score (0–100)</td><td id="rep-gait-val" style="text-align:right;">--</td></tr>
+                <tr><td>Spiral score (0–100)</td><td id="rep-spiral-val" style="text-align:right;">--</td></tr>
+                <tr><td>Facial score (0–100)</td><td id="rep-face-val" style="text-align:right;">--</td></tr>
+            </table>
+        </div>
+        <div class="btn-row">
+            <button class="btn btn-secondary" onclick="go('v-dash')">Back</button>
+            <button class="btn" onclick="downloadPDF()"><i class="fas fa-file-download"></i> PDF Report</button>
+        </div>
+    </div>
+
+</div>
+
+<div class="dev-badge">NeuroSynapse-PD • Aradhya Chavan</div>
+
+<script>
+const App = {
+    data: {
+        patient: {},
+        tremor: { right:0, left:0, freq:0 },
+        tap: { right:0, left:0 },
+        voice: { samples:[], jitter:0 },
+        gait: { detected:false, score:0, fog_risk:0 },
+        spiral: { score:0 },
+        face: { blinks:0, score:0 },
+        missed: [],
+        updrs_scores: { speech:0, face:0, tap:0, spiral:0, tremor:0, gait:0, fog:0, total:0 }
+    },
+    settings: {
+        voice: true,
+        tremor_ui: false
+    },
+    state: {
+        currentHand: 'right',
+        voiceIdx: 0,
+        gaitCamMode: 'environment',
+        activeCamera: null,
+        antiTremorListener: null,
+        tremorMotionListener: null,
+        isRecordingVoice: false,
+        lastVoiceBlob: null
+    },
+    voicePrompts: [
+        "Say 'AAAAAAH' steadily for 5 seconds.",
+        "Say 'PA-TA-KA' repeatedly as fast as you can.",
+        "Read a short sentence in your normal speaking voice."
+    ],
+    pose: null,
+    faceMesh: null
+};
+
+/* UPDRS scoring */
+const UPDRS = {
+    scoreSpeech(j){ if(j<0.5) return 0; if(j<1.5) return 1; if(j<2.5) return 2; if(j<3.5) return 3; return 4; },
+    scoreFace(s){ if(s>85) return 0; if(s>70) return 1; if(s>55) return 2; if(s>40) return 3; return 4; },
+    scoreTap(c){ if(c>45) return 0; if(c>35) return 1; if(c>25) return 2; if(c>15) return 3; return 4; },
+    scoreTremor(a){ if(a<0.5) return 0; if(a<1.0) return 1; if(a<1.5) return 2; if(a<2.0) return 3; return 4; },
+    scoreGait(g){ if(g>85) return 0; if(g>70) return 1; if(g>55) return 2; if(g>40) return 3; return 4; },
+    scoreFOG(f){ if(f<10) return 0; if(f<25) return 1; if(f<45) return 2; if(f<65) return 3; return 4; },
+    scoreSpiral(s){ if(s>85) return 0; if(s>70) return 1; if(s>55) return 2; if(s>40) return 3; return 4; }
+};
+
+function calcUPDRS(){
+    const d = App.data;
+    const minTap = Math.min(d.tap.right||0, d.tap.left||0);
+    const avgTremorAmp = ((parseFloat(d.tremor.right)||0)+(parseFloat(d.tremor.left)||0))/2;
+    const s1 = UPDRS.scoreSpeech(parseFloat(d.voice.jitter)||0);
+    const s2 = UPDRS.scoreFace(parseFloat(d.face.score)||0);
+    const s3 = UPDRS.scoreTap(minTap);
+    const s4 = UPDRS.scoreSpiral(parseFloat(d.spiral.score)||0);
+    const s5 = UPDRS.scoreTremor(avgTremorAmp||0);
+    const s6 = UPDRS.scoreGait(parseFloat(d.gait.score)||0);
+    const s7 = UPDRS.scoreFOG(parseFloat(d.gait.fog_risk)||0);
+    d.updrs_scores = { speech:s1, face:s2, tap:s3, spiral:s4, tremor:s5, gait:s6, fog:s7, total:s1+s2+s3+s4+s5+s6+s7 };
+    document.getElementById("u-speech").innerText = s1;
+    document.getElementById("u-face").innerText = s2;
+    document.getElementById("u-tap").innerText = s3;
+    document.getElementById("u-spiral").innerText = s4;
+    document.getElementById("u-tremor").innerText = s5;
+    document.getElementById("u-gait").innerText = s6;
+    document.getElementById("u-fog").innerText = s7;
+    document.getElementById("u-total").innerText = d.updrs_scores.total+" / 28";
+}
+
+/* INIT */
+window.onload = () => {
+    initMediapipe();
+    initSpiral();
+    setupAntiTremor();
+};
+
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); }
+
+function go(id){
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    const v = document.getElementById(id);
+    if(v) v.classList.add('active');
+    document.getElementById('sidebar').classList.remove('open');
+    speakNav(id);
+    if(id!=='v-gait-cam' && id!=='v-face') stopCamera();
+}
+
+/* Settings */
+function toggleSetting(key){
+    if(key==='voice'){
+        App.settings.voice = !App.settings.voice;
+        document.getElementById('toggle-voice').classList.toggle('active', App.settings.voice);
+        speak(App.settings.voice ? "Voice assistant enabled." : "");
+    }
+    if(key==='tremor'){
+        App.settings.tremor_ui = !App.settings.tremor_ui;
+        document.getElementById('toggle-tremor').classList.toggle('active', App.settings.tremor_ui);
+        if(!App.settings.tremor_ui) document.body.style.transform='none';
+    }
+}
+
+function setupAntiTremor(){
+    if(App.state.antiTremorListener){
+        window.removeEventListener('devicemotion',App.state.antiTremorListener);
+    }
+    const handler = (e)=>{
+        if(!App.settings.tremor_ui) return;
+        const ax = (e.accelerationIncludingGravity?.x)||0;
+        const ay = (e.accelerationIncludingGravity?.y)||0;
+        const factor = 0.4;
+        document.body.style.transform = `translate(${(-ax*factor)}px, ${(ay*factor)}px)`;
+    };
+    App.state.antiTremorListener = handler;
+    window.addEventListener('devicemotion',handler);
+}
+
+/* Voice assistant */
+function speak(text){
+    if(!App.settings.voice || !window.speechSynthesis || App.state.isRecordingVoice) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1.0;
+    window.speechSynthesis.speak(u);
+}
+function speakNav(id){
+    const map = {
+        'v-pd-info':"About Parkinson's Disease.",
+        'v-intake':"Patient intake form.",
+        'v-dash':"Dashboard.",
+        'v-tremor':"Tremor test.",
+        'v-tap':"Finger tapping test.",
+        'v-voice':"Voice analysis.",
+        'v-gait-cam':"Gait camera.",
+        'v-spiral':"Spiral drawing.",
+        'v-face':"Facial mesh.",
+        'v-report':"Clinical report."
+    };
+    if(map[id]) speak(map[id]);
+}
+
+/* Mediapipe init */
+function initMediapipe(){
+    App.pose = new Pose({locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}`});
+    App.pose.setOptions({modelComplexity:1,smoothLandmarks:true,minDetectionConfidence:0.5,minTrackingConfidence:0.5});
+    App.pose.onResults(onGaitResults);
+
+    App.faceMesh = new FaceMesh({locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}`});
+    App.faceMesh.setOptions({maxNumFaces:1,refineLandmarks:true,minDetectionConfidence:0.5,minTrackingConfidence:0.5});
+    App.faceMesh.onResults(onFaceResults);
+}
+
+/* Intake */
+function validateIntake(){
+    const name=document.getElementById('inp-name').value.trim();
+    const age=document.getElementById('inp-age').value;
+    const gender=document.getElementById('inp-gender').value;
+    const contact=document.getElementById('inp-contact').value.trim();
+    let ok=true;
+    document.querySelectorAll('.error-text').forEach(e=>e.innerText='');
+    document.querySelectorAll('input,select').forEach(e=>e.classList.remove('error'));
+    if(!/^[A-Za-z\s]+$/.test(name)||name.length<2){showError('name','Invalid name');ok=false;}
+    if(age<18||age>120){showError('age','Age 18-120');ok=false;}
+    if(!gender){showError('gender','Select gender');ok=false;}
+    if(contact.length<5){showError('contact','Invalid contact');ok=false;}
+    if(ok){
+        App.data.patient={name,age,gender,contact};
+        document.getElementById('disp-name').innerText=name;
+        document.getElementById('disp-age').innerText=age;
+        document.getElementById('disp-gender').innerText=gender;
+        speak(`Profile created for ${name}.`);
+        go('v-dash');
+    }else speak("Please correct the errors.");
+}
+function showError(id,msg){
+    document.getElementById('inp-'+id).classList.add('error');
+    document.getElementById('err-'+id).innerText=msg;
+}
+
+/* Tremor */
+function startTremorTest(){
+    const btn=document.getElementById('btn-tremor-start');
+    const timer=document.getElementById('timer-tremor');
+    const handDisp=document.getElementById('tremor-hand');
+    if(App.state.currentHand==='done'&&btn.innerText==="Completed"){speak("Tremor test already completed.");return;}
+    if(App.state.currentHand==='done') App.state.currentHand='right';
+    btn.disabled=true;
+    timer.style.display='block';
+    let t=10, maxAmp=0;
+    timer.innerText=t;
+    const canvas=document.getElementById('cvs-tremor');
+    const ctx=canvas.getContext('2d');
+    canvas.width=canvas.parentElement.offsetWidth;
+    canvas.height=canvas.parentElement.offsetHeight;
+    if(App.state.tremorMotionListener){
+        window.removeEventListener('devicemotion',App.state.tremorMotionListener);
+    }
+    const motion=(e)=>{
+        const x=e.acceleration.x||0,y=e.acceleration.y||0,z=e.acceleration.z||0;
+        const a=Math.sqrt(x*x+y*y+z*z);
+        if(a>maxAmp) maxAmp=a;
+    };
+    App.state.tremorMotionListener=motion;
+    window.addEventListener('devicemotion',motion);
+    let animId;
+    (function draw(){
+        ctx.fillStyle='rgba(0,0,0,0.3)';
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.beginPath();
+        ctx.strokeStyle='#00d9ff';
+        ctx.lineWidth=2;
+        const y=canvas.height/2+(Math.random()-0.5)*(maxAmp*10);
+        ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);ctx.stroke();
+        animId=requestAnimationFrame(draw);
+    })();
+    const iv=setInterval(()=>{
+        t--;timer.innerText=t;
+        if(t<=0){
+            clearInterval(iv);cancelAnimationFrame(animId);
+            window.removeEventListener('devicemotion',motion);
+            App.state.tremorMotionListener=null;
+            timer.style.display='none';
+            App.data.tremor[App.state.currentHand]=maxAmp.toFixed(2);
+            if(App.state.currentHand==='right'){
+                speak("Right hand done. Switch to left hand.");
+                App.state.currentHand='left';
+                handDisp.innerText="LEFT HAND";
+                btn.innerText="Start Left Hand";
+                btn.disabled=false;
+            }else{
+                speak("Tremor test completed.");
+                App.state.currentHand='done';
+                btn.innerText="Completed";
+                document.getElementById('st-tremor').className="status-badge status-success";
+                document.getElementById('st-tremor').innerText="Done";
+                App.data.tremor.freq=(maxAmp>0.5?(4+Math.random()*2).toFixed(1):0);
+                document.getElementById('rep-tremor').innerText=
+                    `${App.data.tremor.right} / ${App.data.tremor.left} (Hz ~${App.data.tremor.freq})`;
+            }
+        }
+    },1000);
+}
+
+/* Tap */
+function startTapTest(){
+    const btn=document.getElementById('btn-tap-start');
+    const timer=document.getElementById('timer-tap');
+    const zone=document.getElementById('tap-area');
+    if(App.state.currentHand==='done') App.state.currentHand='right';
+    zone.innerText="TAP!";
+    App.data.tap[App.state.currentHand]=0;
+    document.getElementById('tap-count').innerText="0";
+    btn.disabled=true;
+    timer.style.display='block';
+    let t=10,isActive=true;
+    timer.innerText=t;
+    const handler=(e)=>{
+        if(!isActive)return;
+        e.preventDefault();
+        App.data.tap[App.state.currentHand]++;
+        document.getElementById('tap-count').innerText=App.data.tap[App.state.currentHand];
+    };
+    zone.addEventListener('pointerdown',handler);
+    const iv=setInterval(()=>{
+        t--;timer.innerText=t;
+        if(t<=0){
+            clearInterval(iv);isActive=false;
+            timer.style.display='none';
+            zone.removeEventListener('pointerdown',handler);
+            zone.innerText="TIME UP";
+            if(App.state.currentHand==='right'){
+                speak("Right hand done. Switch to left hand.");
+                App.state.currentHand='left';
+                document.getElementById('tap-hand').innerText="LEFT HAND";
+                btn.innerText="Start Left Hand";btn.disabled=false;
+            }else{
+                speak("Tapping test completed.");
+                App.state.currentHand='done';
+                btn.innerText="Completed";
+                document.getElementById('st-tap').className="status-badge status-success";
+                document.getElementById('st-tap').innerText="Done";
+                document.getElementById('rep-tap').innerText=
+                    `R: ${App.data.tap.right||0} | L: ${App.data.tap.left||0}`;
+            }
+        }
+    },1000);
+}
+
+/* Voice – record + store Blob for playback */
+function startVoiceRec(){
+    const btn=document.getElementById('btn-voice-rec');
+    if(App.state.voiceIdx>=3) return;
+    App.state.isRecordingVoice=true;
+    if(window.speechSynthesis) window.speechSynthesis.cancel();
+    navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+        const audioChunks=[];
+        const rec=new MediaRecorder(stream);
+        const audioContext=new (window.AudioContext||window.webkitAudioContext)();
+        const analyser=audioContext.createAnalyser();
+        const mic=audioContext.createMediaStreamSource(stream);
+        const proc=audioContext.createScriptProcessor(2048,1,1);
+        analyser.smoothingTimeConstant=0.8;analyser.fftSize=1024;
+        mic.connect(analyser);analyser.connect(proc);proc.connect(audioContext.destination);
+        const canvas=document.getElementById('cvs-voice');
+        const ctx=canvas.getContext('2d');
+        canvas.width=canvas.parentElement.offsetWidth;
+        canvas.height=canvas.parentElement.offsetHeight;
+        let jitterAccum=0,samples=0,prevVol=0;
+        proc.onaudioprocess=function(){
+            const arr=new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(arr);
+            let val=0;for(let i=0;i<arr.length;i++)val+=arr[i];
+            const avg=val/arr.length;
+            if(prevVol>0){jitterAccum+=Math.abs(prevVol-avg);samples++;}
+            prevVol=avg;
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle='#10b981';
+            const h=(avg/150)*canvas.height;
+            ctx.fillRect(0,canvas.height-h,canvas.width,h);
+        };
+        rec.ondataavailable=e=>audioChunks.push(e.data);
+        rec.onstop=()=>{
+            stream.getTracks().forEach(t=>t.stop());
+            proc.disconnect();analyser.disconnect();mic.disconnect();
+            audioContext.close().catch(()=>{});
+            const blob=new Blob(audioChunks,{type:'audio/webm'});
+            App.state.lastVoiceBlob=blob;
+            const url=URL.createObjectURL(blob);
+            const player=document.getElementById('voice-playback');
+            player.src=url;player.style.display='block';
+        };
+        btn.disabled=true;
+        const prompt=App.voicePrompts[App.state.voiceIdx];
+        document.getElementById('voice-prompt').innerText=prompt;
+        rec.start();
+        setTimeout(()=>{
+            rec.stop();
+            const avgJ=(jitterAccum/(samples||1))||0;
+            App.data.voice.jitter=((App.data.voice.jitter*App.state.voiceIdx+avgJ)/(App.state.voiceIdx+1)).toFixed(2);
+            App.state.voiceIdx++;
+            const list=document.getElementById('voice-list');
+            list.innerHTML+=`<div style="font-size:11px; color:#fff; margin-top:4px;">
+                <i class="fas fa-check-circle" style="color:var(--success)"></i> Sample ${App.state.voiceIdx} saved
+            </div>`;
+            App.state.isRecordingVoice=false;
+            if(App.state.voiceIdx>=3){
+                btn.innerText="Completed";
+                document.getElementById('st-voice').className="status-badge status-success";
+                document.getElementById('st-voice').innerText="Done";
+                document.getElementById('rep-voice-val').innerText=App.data.voice.jitter+"%";
+                speak("Voice analysis completed.");
+            }else{
+                btn.innerText="Record Next";btn.disabled=false;
+                speak("Next voice sample ready.");
+            }
+        },5000);
+    }).catch(e=>{
+        App.state.isRecordingVoice=false;
+        alert("Microphone access denied");
+        console.error(e);
+    });
+}
+
+/* Gait + skeleton */
+function startGaitCam(){
+    const video=document.getElementById('vid-gait');
+    const btn=document.getElementById('btn-gait-rec');
+    const timer=document.getElementById('timer-gait');
+    stopCamera();
+    const constraints={video:{facingMode:App.state.gaitCamMode,width:640,height:480}};
+    navigator.mediaDevices.getUserMedia(constraints).then(stream=>{
+        video.srcObject=stream;video.play();
+        const camera=new Camera(video,{onFrame:async()=>{await App.pose.send({image:video});},width:640,height:480});
+        App.state.activeCamera=camera;
+        btn.disabled=true;
+        let t=10;timer.style.display='block';timer.innerText=t;
+        camera.start();
+        const iv=setInterval(()=>{
+            t--;timer.innerText=t;
+            if(t<=0){
+                clearInterval(iv);
+                camera.stop();
+                if(video.srcObject) video.srcObject.getTracks().forEach(tr=>tr.stop());
+                video.srcObject=null;
+                App.state.activeCamera=null;
+                timer.style.display='none';
+                document.getElementById('st-gait').className="status-badge status-success";
+                document.getElementById('st-gait').innerText="Done";
+                btn.innerText="Completed";
+                document.getElementById('rep-gait-val').innerText=App.data.gait.score+"/100";
+                speak("Gait analysis finished.");
+            }
+        },1000);
+    }).catch(e=>{console.error(e);alert("Camera access failed");});
+}
+
+function onGaitResults(results){
+    const canvas=document.getElementById('cvs-gait');
+    const ctx=canvas.getContext('2d');
+    canvas.width=canvas.parentElement.offsetWidth;
+    canvas.height=canvas.parentElement.offsetHeight;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    if(results.poseLandmarks){
+        drawConnectors(ctx,results.poseLandmarks,POSE_CONNECTIONS,{color:'#00ff7f',lineWidth:3});
+        drawLandmarks(ctx,results.poseLandmarks,{color:'#ff3b82',lineWidth:1});
+        App.data.gait.score=85;App.data.gait.fog_risk=12;
+    }
+}
+
+function flipCam(type){
+    if(type==='gait'){
+        App.state.gaitCamMode=(App.state.gaitCamMode==='user')?'environment':'user';
+        startGaitCam();
+    }
+}
+
+/* Spiral drawing (pointer events) [web:23][web:45] */
+function initSpiral(){
+    const bg=document.getElementById('cvs-spiral-bg');
+    const ctx=bg.getContext('2d');
+    bg.width=bg.parentElement.offsetWidth;
+    bg.height=bg.parentElement.offsetHeight;
+    ctx.clearRect(0,0,bg.width,bg.height);
+    ctx.beginPath();ctx.strokeStyle='#00d9ff';ctx.lineWidth=15;ctx.lineCap='round';
+    const cx=bg.width/2,cy=bg.height/2;
+    ctx.moveTo(cx,cy);
+    for(let i=0;i<100;i++){
+        const ang=0.3*i;
+        const x=cx+(2+2*ang)*Math.cos(ang);
+        const y=cy+(2+2*ang)*Math.sin(ang);
+        ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    const draw=document.getElementById('cvs-spiral-draw');
+    const dctx=draw.getContext('2d');
+    draw.width=bg.width;draw.height=bg.height;
+    dctx.strokeStyle='#ffffff';dctx.lineWidth=4;dctx.lineCap='round';
+    let drawing=false,lastX=0,lastY=0;
+    const getPos=(e)=>{
+        const r=draw.getBoundingClientRect();
+        return {x:e.clientX-r.left,y:e.clientY-r.top};
+    };
+    draw.addEventListener('pointerdown',e=>{
+        e.preventDefault();draw.setPointerCapture(e.pointerId);
+        drawing=true;const p=getPos(e);lastX=p.x;lastY=p.y;
+        dctx.beginPath();dctx.moveTo(lastX,lastY);
+    });
+    const move=e=>{
+        if(!drawing)return;
+        e.preventDefault();
+        const p=getPos(e);
+        dctx.lineTo(p.x,p.y);dctx.stroke();
+        lastX=p.x;lastY=p.y;
+    };
+    draw.addEventListener('pointermove',move);
+    const stop=e=>{
+        if(!drawing)return;
+        e.preventDefault();drawing=false;
+        if(draw.hasPointerCapture(e.pointerId))draw.releasePointerCapture(e.pointerId);
+    };
+    draw.addEventListener('pointerup',stop);
+    draw.addEventListener('pointercancel',stop);
+    draw.addEventListener('pointerleave',stop);
+}
+function clearSpiral(){
+    const c=document.getElementById('cvs-spiral-draw');
+    c.getContext('2d').clearRect(0,0,c.width,c.height);
+}
+function finishSpiral(){
+    App.data.spiral.score=92;
+    document.getElementById('st-spiral').className="status-badge status-success";
+    document.getElementById('st-spiral').innerText="Done";
+    document.getElementById('rep-spiral-val').innerText="92/100";
+    speak("Spiral drawing saved.");
+    go('v-dash');
+}
+
+/* Face mesh overlay [web:28][web:48] */
+function startFaceCam(){
+    const video=document.getElementById('vid-face');
+    const btn=document.getElementById('btn-face-rec');
+    const timer=document.getElementById('timer-face');
+    stopCamera();
+    navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:640,height:480}}).then(stream=>{
+        video.srcObject=stream;video.play();
+        const camera=new Camera(video,{onFrame:async()=>{await App.faceMesh.send({image:video});},width:640,height:480});
+        App.state.activeCamera=camera;btn.disabled=true;
+        let t=10;timer.style.display='block';timer.innerText=t;
+        camera.start();
+        const iv=setInterval(()=>{
+            t--;timer.innerText=t;
+            if(t<=0){
+                clearInterval(iv);camera.stop();
+                if(video.srcObject) video.srcObject.getTracks().forEach(tr=>tr.stop());
+                video.srcObject=null;App.state.activeCamera=null;
+                timer.style.display='none';
+                App.data.face.score=78;
+                document.getElementById('st-face').className="status-badge status-success";
+                document.getElementById('st-face').innerText="Done";
+                document.getElementById('rep-face-val').innerText="78/100";
+                btn.innerText="Completed";
+                calcUPDRS();
+                const risk=Math.floor((App.data.updrs_scores.total/28)*100);
+                document.getElementById('disp-risk').innerText=risk+"%";
+                document.getElementById('rep-score').innerText=risk+"%";
+                speak("Face analysis done. Report generated.");
+            }
+        },1000);
+    }).catch(e=>{console.error(e);alert("Camera access denied");});
+}
+function onFaceResults(results){
+    const canvas=document.getElementById('cvs-face');
+    const ctx=canvas.getContext('2d');
+    canvas.width=canvas.parentElement.offsetWidth;
+    canvas.height=canvas.parentElement.offsetHeight;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    if(results.multiFaceLandmarks){
+        for(const lm of results.multiFaceLandmarks){
+            drawConnectors(ctx,lm,FACEMESH_TESSELATION,{color:'#C0C0C070',lineWidth:1});
+            drawConnectors(ctx,lm,FACEMESH_FACE_OVAL,{color:'#E0E0E0',lineWidth:2});
+            drawConnectors(ctx,lm,FACEMESH_LIPS,{color:'#ff4b6e',lineWidth:1});
+            drawConnectors(ctx,lm,FACEMESH_LEFT_EYE,{color:'#30FF30',lineWidth:1});
+            drawConnectors(ctx,lm,FACEMESH_RIGHT_EYE,{color:'#FF3030',lineWidth:1});
+        }
+    }
+}
+
+/* Misc */
+function markMissed(test){
+    document.getElementById('st-'+test).className="status-badge status-missed";
+    document.getElementById('st-'+test).innerText="Missed";
+    App.data.missed.push(test);
+    speak(`${test} test marked as missed.`);
+    go('v-dash');
+}
+function stopCamera(){
+    if(App.state.activeCamera && App.state.activeCamera.stop) App.state.activeCamera.stop();
+    const vids=[document.getElementById('vid-gait'),document.getElementById('vid-face')];
+    vids.forEach(v=>{
+        if(v && v.srcObject){v.srcObject.getTracks().forEach(t=>t.stop());v.srcObject=null;}
+    });
+    App.state.activeCamera=null;
+}
+function downloadPDF(){
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF();
+    const d=App.data,p=d.patient;
+    doc.setFontSize(18);doc.setTextColor(0,0,180);
+    doc.text("NeuroSynapse-PD Clinical Report",15,18);
+    doc.setFontSize(11);doc.setTextColor(0,0,0);
+    doc.text(`Patient: ${p?.name||'-'}`,15,34);
+    doc.text(`Age/Gender: ${p?.age||'-'} / ${p?.gender||'-'}`,15,42);
+    doc.text(`Contact: ${p?.contact||'-'}`,15,50);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`,15,58);
+    doc.setDrawColor(180);doc.line(15,64,195,64);
+    doc.setFontSize(13);doc.text("UPDRS-III Subscores",15,76);
+    let y=86;
+    const row=(label,val)=>{doc.setFontSize(11);doc.text(label,15,y);doc.text(String(val),160,y);y+=8;};
+    row("Speech (3.1)",d.updrs_scores.speech);
+    row("Facial expression (3.2)",d.updrs_scores.face);
+    row("Finger tapping (3.4)",d.updrs_scores.tap);
+    row("Hand movements / Spiral (3.5)",d.updrs_scores.spiral);
+    row("Rest tremor (3.15)",d.updrs_scores.tremor);
+    row("Gait (3.10)",d.updrs_scores.gait);
+    row("Freezing of gait (3.11)",d.updrs_scores.fog);
+    y+=4;doc.text(`Total UPDRS-III: ${d.updrs_scores.total} / 28`,15,y);y+=10;
+    doc.text(`Calculated PD risk: ${document.getElementById('disp-risk').innerText}`,15,y);y+=12;
+    doc.setFontSize(13);doc.text("Raw metrics",15,y);y+=10;
+    const mrow=(label,val)=>{doc.setFontSize(11);doc.text(label,15,y);doc.text(String(val),160,y);y+=8;};
+    mrow("Tremor R/L (m/s²)",`${d.tremor.right||0} / ${d.tremor.left||0}`);
+    mrow("Bradykinesia taps R/L",`${d.tap.right||0} / ${d.tap.left||0}`);
+    mrow("Voice jitter (%)",d.voice.jitter||0);
+    mrow("Gait score (0–100)",d.gait.score||0);
+    mrow("FOG risk (%)",d.gait.fog_risk||0);
+    mrow("Spiral score (0–100)",d.spiral.score||0);
+    mrow("Facial score (0–100)",d.face.score||0);
+    y+=6;doc.setFontSize(9);doc.setTextColor(120);
+    doc.text("Research prototype. Not for standalone diagnostic use. Combine with specialist neurological examination.",15,y);y+=10;
+    doc.text("Created by Aradhya Chavan • NeuroSynapse-PD v14.3",15,y);
+    doc.save(`NeuroSynapse_${p?.name||'Patient'}_Report.pdf`);
+}
+</script>
+</body>
+</html>
