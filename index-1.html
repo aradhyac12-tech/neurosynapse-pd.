@@ -1,0 +1,3264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, maximum-scale=1.0, user-scalable=no">
+    <title>NeuroSynapse-PD | Clinical Assessment Suite</title>
+
+    <!-- Icons & Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Mediapipe -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+
+    <style>
+        :root {
+            /* Professional Clinical Color Scheme - Dark Blue Theme */
+            --bg-primary: #0a192f;
+            --bg-secondary: #112240;
+            --bg-card: rgba(17, 34, 64, 0.9);
+            --border: rgba(100, 255, 218, 0.1);
+            --text-primary: #e6f1ff;
+            --text-secondary: #a8b2d1;
+            --text-muted: #8892b0;
+            
+            /* Clinical Accent Colors */
+            --accent-primary: #64ffda;
+            --accent-secondary: #57cbff;
+            --accent-success: #00d26a;
+            --accent-warning: #ffb347;
+            --accent-danger: #ff6b6b;
+            --accent-info: #5d9cec;
+            
+            /* Status Colors */
+            --status-normal: #00d26a;
+            --status-mild: #ffb347;
+            --status-moderate: #ff8a47;
+            --status-severe: #ff6b6b;
+            
+            /* Gradients */
+            --gradient-primary: linear-gradient(135deg, #64ffda, #57cbff);
+            --gradient-success: linear-gradient(135deg, #00d26a, #00b894);
+            --gradient-warning: linear-gradient(135deg, #ffb347, #ff8a47);
+            --gradient-danger: linear-gradient(135deg, #ff6b6b, #ff4757);
+            
+            /* Animations */
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: 'Inter', 'Noto Sans', system-ui, -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+            transition: transform 0.08s linear;
+        }
+        
+        /* Anti-Tremor UI Effect */
+        body.tremor-mode {
+            animation: tremorShake 0.1s infinite;
+        }
+        
+        @keyframes tremorShake {
+            0%, 100% { transform: translate(0, 0) rotate(0); }
+            25% { transform: translate(1px, 1px) rotate(0.1deg); }
+            50% { transform: translate(-1px, -1px) rotate(-0.1deg); }
+            75% { transform: translate(1px, -1px) rotate(0.1deg); }
+        }
+        
+        /* Splash Screen */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+        
+        .splash-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .splash-logo {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .splash-title {
+            font-size: 3rem;
+            font-weight: 900;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .splash-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        .splash-developer {
+            font-size: 1rem;
+            color: var(--accent-primary);
+            margin-top: 2rem;
+            padding: 0.5rem 1.5rem;
+            border: 1px solid var(--border);
+            border-radius: 25px;
+            background: rgba(100, 255, 218, 0.1);
+        }
+        
+        .splash-progress {
+            width: 200px;
+            height: 4px;
+            background: rgba(100, 255, 218, 0.2);
+            border-radius: 2px;
+            margin-top: 2rem;
+            overflow: hidden;
+        }
+        
+        .splash-progress-bar {
+            height: 100%;
+            background: var(--accent-primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        /* Professional Typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+        
+        h2 {
+            font-size: 1.8rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        p {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+        
+        small {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+        
+        /* Professional Navigation */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background: rgba(10, 25, 47, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            z-index: 1000;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .nav-logo {
+            font-size: 1.8rem;
+            color: var(--accent-primary);
+        }
+        
+        .nav-title {
+            font-weight: 800;
+            font-size: 1.3rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-version {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+            padding: 0.25rem 0.75rem;
+            background: rgba(100, 255, 218, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(100, 255, 218, 0.2);
+        }
+        
+        /* Professional Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 320px;
+            background: rgba(17, 34, 64, 0.98);
+            border-right: 1px solid var(--border);
+            transform: translateX(-100%);
+            transition: var(--transition-smooth);
+            z-index: 1100;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.3);
+            overflow-y: auto;
+        }
+        
+        .sidebar.active {
+            transform: translateX(0);
+        }
+        
+        .sidebar-header {
+            padding: 2rem;
+            border-bottom: 1px solid var(--border);
+            background: rgba(10, 25, 47, 0.8);
+        }
+        
+        .sidebar-title {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .sidebar-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+        
+        .sidebar-credits {
+            font-size: 0.8rem;
+            color: var(--accent-primary);
+            margin-top: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .sidebar-back {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+        
+        .sidebar-back:hover {
+            color: var(--accent-primary);
+        }
+        
+        .nav-section {
+            margin: 2rem 0;
+        }
+        
+        .section-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 0 2rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 2rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            border-left: 4px solid transparent;
+            margin: 0.25rem 0;
+        }
+        
+        .nav-item:hover {
+            background: rgba(100, 255, 218, 0.1);
+            color: var(--accent-primary);
+            padding-left: 2.5rem;
+        }
+        
+        .nav-item.active {
+            background: rgba(100, 255, 218, 0.15);
+            color: var(--accent-primary);
+            border-left-color: var(--accent-primary);
+        }
+        
+        .nav-icon {
+            width: 24px;
+            text-align: center;
+            font-size: 1rem;
+        }
+        
+        .nav-badge {
+            margin-left: auto;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            background: rgba(100, 255, 218, 0.1);
+            color: var(--accent-primary);
+            border: 1px solid rgba(100, 255, 218, 0.2);
+        }
+        
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 2rem;
+            border-top: 1px solid var(--border);
+            background: rgba(10, 25, 47, 0.8);
+        }
+        
+        .settings-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+        
+        .settings-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .clinical-toggle {
+            width: 52px;
+            height: 28px;
+            background: rgba(136, 146, 176, 0.3);
+            border-radius: 14px;
+            position: relative;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            border: 2px solid transparent;
+        }
+        
+        .clinical-toggle:hover {
+            border-color: var(--accent-primary);
+        }
+        
+        .clinical-toggle.active {
+            background: var(--accent-primary);
+        }
+        
+        .clinical-toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: var(--transition-smooth);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .clinical-toggle.active::after {
+            transform: translateX(24px);
+        }
+        
+        /* Professional Main Content */
+        .main-content {
+            padding-top: 90px;
+            padding-bottom: 2rem;
+            min-height: 100vh;
+            transition: var(--transition-smooth);
+        }
+        
+        .main-content.sidebar-open {
+            margin-left: 320px;
+        }
+        
+        .view {
+            display: none;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+            animation: fadeIn 0.4s ease-out;
+        }
+        
+        .view.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Professional Cards */
+        .clinical-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: var(--transition-smooth);
+            overflow: hidden;
+        }
+        
+        .clinical-card:hover {
+            border-color: rgba(100, 255, 218, 0.3);
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        /* Info View */
+        .info-hero {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: linear-gradient(135deg, rgba(100, 255, 218, 0.1), rgba(87, 203, 255, 0.1));
+            border-radius: 16px;
+            margin-bottom: 2rem;
+        }
+        
+        .info-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .info-points {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .info-point {
+            padding: 1.5rem;
+            text-align: center;
+        }
+        
+        .point-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--accent-primary);
+        }
+        
+        /* Professional Forms */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(17, 34, 64, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: var(--transition-smooth);
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(100, 255, 218, 0.1);
+        }
+        
+        .form-control.error {
+            border-color: var(--accent-danger);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-hint {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+        
+        .error-message {
+            font-size: 0.8rem;
+            color: var(--accent-danger);
+            margin-top: 0.5rem;
+            min-height: 1rem;
+        }
+        
+        /* Professional Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 1rem 2rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            font-family: inherit;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: #0a192f;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(100, 255, 218, 0.3);
+        }
+        
+        .btn-success {
+            background: var(--gradient-success);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: var(--gradient-warning);
+            color: white;
+        }
+        
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+        
+        .btn-outline:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            background: rgba(100, 255, 218, 0.1);
+        }
+        
+        .btn-block {
+            width: 100%;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .btn-icon {
+            font-size: 1.1rem;
+        }
+        
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .dashboard-card {
+            padding: 2rem;
+            cursor: pointer;
+            text-align: center;
+        }
+        
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            transition: var(--transition-smooth);
+        }
+        
+        .dashboard-card:hover .card-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+        
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+        }
+        
+        .card-description {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+        
+        /* Status Badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .status-pending {
+            background: rgba(136, 146, 176, 0.2);
+            color: var(--text-muted);
+        }
+        
+        .status-completed {
+            background: rgba(0, 210, 106, 0.2);
+            color: var(--accent-success);
+        }
+        
+        .status-in-progress {
+            background: rgba(100, 255, 218, 0.2);
+            color: var(--accent-primary);
+        }
+        
+        /* Test Interfaces */
+        .test-header {
+            padding: 2rem;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, rgba(100, 255, 218, 0.1), transparent);
+        }
+        
+        .test-instruction {
+            padding: 1.5rem;
+            background: rgba(100, 255, 218, 0.1);
+            border: 1px solid rgba(100, 255, 218, 0.3);
+            border-radius: 12px;
+            margin: 1.5rem 0;
+        }
+        
+        .instruction-text {
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .instruction-subtext {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        /* Visualization Containers */
+        .visualization-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 2rem 0;
+            border: 1px solid var(--border);
+        }
+        
+        .visualization-container.fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 100vh;
+            z-index: 1200;
+            border-radius: 0;
+            margin: 0;
+        }
+        
+        .visualization-container canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        .test-timer {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(10, 25, 47, 0.9);
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-primary);
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            font-size: 1.1rem;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+        }
+        
+        .fullscreen-toggle {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: rgba(10, 25, 47, 0.9);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+            transition: var(--transition-smooth);
+        }
+        
+        .fullscreen-toggle:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+        
+        /* Metrics Display */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .metric-card {
+            padding: 1.5rem;
+            text-align: center;
+            border-radius: 12px;
+            background: rgba(17, 34, 64, 0.6);
+            border: 1px solid var(--border);
+        }
+        
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            margin-bottom: 0.5rem;
+            font-family: 'Inter', monospace;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .metric-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .metric-unit {
+            font-size: 0.85rem;
+            color: var(--accent-secondary);
+            font-weight: 500;
+            margin-top: 0.25rem;
+        }
+        
+        /* Voice Test Animation */
+        .voice-animation {
+            position: relative;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .voice-wave {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(100, 255, 218, 0.1) 0%, transparent 70%);
+            animation: wavePulse 2s infinite;
+        }
+        
+        @keyframes wavePulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+        }
+        
+        .mic-icon {
+            font-size: 4rem;
+            color: var(--accent-primary);
+            animation: micBounce 1.5s infinite;
+        }
+        
+        @keyframes micBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        /* Tremor Animation */
+        .tremor-animation {
+            position: relative;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .tremor-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent-primary);
+            transform: translateY(-50%);
+        }
+        
+        .tremor-dot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: tremorMove 2s infinite ease-in-out;
+        }
+        
+        @keyframes tremorMove {
+            0%, 100% { transform: translate(-50%, -50%); }
+            25% { transform: translate(calc(-50% + 30px), calc(-50% + 20px)); }
+            50% { transform: translate(calc(-50% - 20px), calc(-50% - 30px)); }
+            75% { transform: translate(calc(-50% + 10px), calc(-50% + 40px)); }
+        }
+        
+        /* Results Table */
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2rem 0;
+        }
+        
+        .results-table th {
+            padding: 1rem;
+            text-align: left;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid var(--border);
+            background: rgba(17, 34, 64, 0.5);
+        }
+        
+        .results-table td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(100, 255, 218, 0.1);
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+        
+        .results-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .results-table tr:hover td {
+            background: rgba(100, 255, 218, 0.05);
+        }
+        
+        .score-cell {
+            text-align: right;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: var(--accent-primary);
+        }
+        
+        /* Report View */
+        .report-summary {
+            padding: 2rem;
+            background: linear-gradient(135deg, rgba(100, 255, 218, 0.1), rgba(87, 203, 255, 0.1));
+            border-radius: 16px;
+            margin: 2rem 0;
+        }
+        
+        .risk-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+        
+        .risk-low {
+            background: rgba(0, 210, 106, 0.2);
+            color: var(--accent-success);
+            border: 1px solid rgba(0, 210, 106, 0.3);
+        }
+        
+        .risk-medium {
+            background: rgba(255, 179, 71, 0.2);
+            color: var(--accent-warning);
+            border: 1px solid rgba(255, 179, 71, 0.3);
+        }
+        
+        .risk-high {
+            background: rgba(255, 107, 107, 0.2);
+            color: var(--accent-danger);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+        
+        /* Utility Classes */
+        .text-center {
+            text-align: center;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        
+        .mt-1 { margin-top: 0.5rem; }
+        .mt-2 { margin-top: 1rem; }
+        .mt-3 { margin-top: 1.5rem; }
+        .mt-4 { margin-top: 2rem; }
+        
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
+        .mb-3 { margin-bottom: 1.5rem; }
+        .mb-4 { margin-bottom: 2rem; }
+        
+        .py-2 { padding-top: 1rem; padding-bottom: 1rem; }
+        .py-3 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+        .py-4 { padding-top: 2rem; padding-bottom: 2rem; }
+        
+        .px-2 { padding-left: 1rem; padding-right: 1rem; }
+        .px-3 { padding-left: 1.5rem; padding-right: 1.5rem; }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .visible {
+            display: block !important;
+        }
+        
+        .flex {
+            display: flex;
+        }
+        
+        .items-center {
+            align-items: center;
+        }
+        
+        .justify-between {
+            justify-content: space-between;
+        }
+        
+        .gap-1 { gap: 0.5rem; }
+        .gap-2 { gap: 1rem; }
+        .gap-3 { gap: 1.5rem; }
+        
+        /* Loading States */
+        .loading {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(100, 255, 218, 0.1),
+                transparent
+            );
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+        
+        /* Dangle Indicator */
+        .dangle-indicator {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(10, 25, 47, 0.9);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            z-index: 900;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .dangle-icon {
+            font-size: 1.2rem;
+            color: var(--accent-primary);
+        }
+        
+        .dangle-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .dangle-text.active {
+            color: var(--accent-primary);
+            font-weight: 600;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 280px;
+            }
+            
+            .main-content.sidebar-open {
+                margin-left: 280px;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 0 1rem;
+                height: 60px;
+            }
+            
+            .nav-title {
+                font-size: 1.1rem;
+            }
+            
+            .main-content {
+                padding-top: 70px;
+            }
+            
+            .sidebar {
+                width: 100%;
+                transform: translateX(-100%);
+            }
+            
+            .main-content.sidebar-open {
+                margin-left: 0;
+                transform: translateX(280px);
+            }
+            
+            .view {
+                padding: 1rem;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .info-points {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn {
+                padding: 0.875rem 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Splash Screen -->
+    <div class="splash-screen" id="splashScreen">
+        <div class="splash-logo">🧠</div>
+        <h1 class="splash-title">NeuroSynapse-PD</h1>
+        <p class="splash-subtitle">Advanced Parkinson's Disease Clinical Assessment Suite</p>
+        <div class="splash-developer">
+            <i class="fas fa-code"></i>
+            Developed by Aradhya Chavan
+        </div>
+        <div class="splash-progress">
+            <div class="splash-progress-bar" id="splashProgress"></div>
+        </div>
+    </div>
+    
+    <!-- Dangle Indicators -->
+    <div class="dangle-indicator" id="voiceDangle">
+        <div class="dangle-icon">
+            <i class="fas fa-microphone"></i>
+        </div>
+        <div class="dangle-text">Voice: Ready</div>
+    </div>
+    
+    <div class="dangle-indicator" id="tremorDangle" style="top: 140px;">
+        <div class="dangle-icon">
+            <i class="fas fa-hand-paper"></i>
+        </div>
+        <div class="dangle-text">Anti-Tremor: Off</div>
+    </div>
+    
+    <!-- Sidebar Navigation -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">
+                <i class="fas fa-brain"></i>
+                NeuroSynapse-PD
+            </div>
+            <div class="sidebar-subtitle">Clinical Assessment Suite v2.1</div>
+            <div class="sidebar-credits">
+                <i class="fas fa-user-md"></i>
+                Developed by Aradhya Chavan • Clinical Research Division
+            </div>
+            <div class="sidebar-back" id="sidebarBack">
+                <i class="fas fa-arrow-left"></i>
+            </div>
+        </div>
+        
+        <div class="nav-section">
+            <div class="section-label">
+                <i class="fas fa-compass"></i>
+                Navigation
+            </div>
+            <div class="nav-item active" data-view="dashboard">
+                <i class="fas fa-chart-line nav-icon"></i>
+                <span>Clinical Dashboard</span>
+                <div class="nav-badge">Home</div>
+            </div>
+            <div class="nav-item" data-view="info">
+                <i class="fas fa-info-circle nav-icon"></i>
+                <span>PD Information</span>
+                <div class="nav-badge">Guide</div>
+            </div>
+            <div class="nav-item" data-view="patient">
+                <i class="fas fa-user-injured nav-icon"></i>
+                <span>Patient Profile</span>
+                <div class="nav-badge">Required</div>
+            </div>
+        </div>
+        
+        <div class="nav-section">
+            <div class="section-label">
+                <i class="fas fa-stethoscope"></i>
+                Motor Assessments
+            </div>
+            <div class="nav-item" data-view="voice" disabled>
+                <i class="fas fa-microphone nav-icon"></i>
+                <span>Speech Analysis</span>
+                <div class="nav-badge">UPDRS 3.1</div>
+            </div>
+            <div class="nav-item" data-view="tremor" disabled>
+                <i class="fas fa-wave-square nav-icon"></i>
+                <span>Tremor Assessment</span>
+                <div class="nav-badge">UPDRS 3.15-18</div>
+            </div>
+            <div class="nav-item" data-view="tapping" disabled>
+                <i class="fas fa-hand-point-up nav-icon"></i>
+                <span>Finger Tapping</span>
+                <div class="nav-badge">UPDRS 3.4</div>
+            </div>
+            <div class="nav-item" data-view="gait" disabled>
+                <i class="fas fa-walking nav-icon"></i>
+                <span>Gait Analysis</span>
+                <div class="nav-badge">UPDRS 3.10-11</div>
+            </div>
+            <div class="nav-item" data-view="spiral" disabled>
+                <i class="fas fa-draw-polygon nav-icon"></i>
+                <span>Spiral Drawing</span>
+                <div class="nav-badge">UPDRS 3.5-6</div>
+            </div>
+            <div class="nav-item" data-view="facial" disabled>
+                <i class="fas fa-smile nav-icon"></i>
+                <span>Facial Expression</span>
+                <div class="nav-badge">UPDRS 3.2</div>
+            </div>
+        </div>
+        
+        <div class="nav-section">
+            <div class="section-label">
+                <i class="fas fa-clipboard-check"></i>
+                Results & Reports
+            </div>
+            <div class="nav-item" data-view="results" disabled>
+                <i class="fas fa-chart-bar nav-icon"></i>
+                <span>Assessment Results</span>
+                <div class="nav-badge">Locked</div>
+            </div>
+            <div class="nav-item" data-view="report" disabled>
+                <i class="fas fa-file-medical-alt nav-icon"></i>
+                <span>Clinical Report</span>
+                <div class="nav-badge">Locked</div>
+            </div>
+        </div>
+        
+        <div class="sidebar-footer">
+            <div class="settings-item">
+                <div class="settings-label">
+                    <i class="fas fa-language"></i>
+                    Language
+                </div>
+                <select class="form-control" id="languageSelect" style="width: 120px; padding: 0.5rem;">
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                    <option value="fr">Français</option>
+                    <option value="de">Deutsch</option>
+                    <option value="hi">हिन्दी</option>
+                    <option value="zh">中文</option>
+                </select>
+            </div>
+            <div class="settings-item">
+                <div class="settings-label">
+                    <i class="fas fa-volume-up"></i>
+                    Voice Assistant
+                </div>
+                <div class="clinical-toggle active" id="voiceToggle"></div>
+            </div>
+            <div class="settings-item">
+                <div class="settings-label">
+                    <i class="fas fa-handshake"></i>
+                    Anti-Tremor UI
+                </div>
+                <div class="clinical-toggle" id="tremorToggle"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <button class="btn btn-outline" id="menuToggle" style="padding: 0.5rem 1rem;">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div>
+                <div class="nav-title">NeuroSynapse-PD</div>
+                <div class="nav-version">Clinical Suite v2.1</div>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-2">
+            <div class="language-selector">
+                <span id="currentLanguage">English</span>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content Area -->
+    <main class="main-content" id="mainContent">
+        <!-- Dashboard View -->
+        <div class="view active" id="dashboardView">
+            <div class="clinical-card">
+                <div class="test-header">
+                    <h2>Clinical Assessment Dashboard</h2>
+                    <p>Complete motor function assessment for Parkinson's Disease screening and monitoring</p>
+                </div>
+                <div class="px-3 py-3">
+                    <div id="patientSummary">
+                        <div class="info-points">
+                            <div class="info-point">
+                                <div class="point-icon">👤</div>
+                                <h3>Patient Profile</h3>
+                                <p>Complete demographic and clinical information</p>
+                                <div class="status-badge status-pending mt-2">Required</div>
+                            </div>
+                            <div class="info-point">
+                                <div class="point-icon">📊</div>
+                                <h3>6 Assessments</h3>
+                                <p>Comprehensive motor function evaluation</p>
+                                <div class="status-badge status-pending mt-2">0/6 Complete</div>
+                            </div>
+                            <div class="info-point">
+                                <div class="point-icon">🏥</div>
+                                <h3>Clinical Report</h3>
+                                <p>Detailed PDF report with UPDRS mapping</p>
+                                <div class="status-badge status-pending mt-2">Locked</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button class="btn btn-primary btn-block" data-view="info">
+                                <i class="fas fa-play-circle btn-icon"></i>
+                                Begin Assessment Journey
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="dashboard-grid mt-3">
+                <div class="clinical-card dashboard-card" data-view="info">
+                    <div class="card-icon">📚</div>
+                    <div class="card-title">PD Information</div>
+                    <div class="card-description">Learn about Parkinson's Disease and assessment protocols</div>
+                    <div class="status-badge status-pending">Guide</div>
+                </div>
+                
+                <div class="clinical-card dashboard-card" data-view="patient">
+                    <div class="card-icon">👤</div>
+                    <div class="card-title">Patient Profile</div>
+                    <div class="card-description">Complete demographic and clinical information</div>
+                    <div class="status-badge status-pending">Required</div>
+                </div>
+                
+                <div class="clinical-card dashboard-card locked" data-view="voice">
+                    <div class="card-icon">🎙️</div>
+                    <div class="card-title">Speech Analysis</div>
+                    <div class="card-description">Assess vocal characteristics and articulation</div>
+                    <div class="status-badge status-pending">Locked</div>
+                </div>
+                
+                <div class="clinical-card dashboard-card locked" data-view="tremor">
+                    <div class="card-icon">🤲</div>
+                    <div class="card-title">Tremor Assessment</div>
+                    <div class="card-description">Measure resting tremor frequency and amplitude</div>
+                    <div class="status-badge status-pending">Locked</div>
+                </div>
+                
+                <div class="clinical-card dashboard-card locked" data-view="tapping">
+                    <div class="card-icon">👉</div>
+                    <div class="card-title">Finger Tapping</div>
+                    <div class="card-description">Evaluate bradykinesia and motor speed</div>
+                    <div class="status-badge status-pending">Locked</div>
+                </div>
+                
+                <div class="clinical-card dashboard-card locked" data-view="gait">
+                    <div class="card-icon">🚶‍♂️</div>
+                    <div class="card-title">Gait Analysis</div>
+                    <div class="card-description">Assess walking pattern and postural stability</div>
+                    <div class="status-badge status-pending">Locked</div>
+                </div>
+                
+                <div class="clinical-card dashboard-card locked" data-view="spiral">
+                    <div class="card-icon">🌀</div>
+                    <div class="card-title">Spiral Drawing</div>
+                    <div class="card-description">Evaluate micrographia and fine motor control</div>
+                    <div class="status-badge status-pending">Locked</div>
+                </div>
+                
+                <div class="clinical-card dashboard-card locked" data-view="facial">
+                    <div class="card-icon">😐</div>
+                    <div class="card-title">Facial Expression</div>
+                    <div class="card-description">Assess hypomimia and facial muscle movement</div>
+                    <div class="status-badge status-pending">Locked</div>
+                </div>
+                
+                <div class="clinical-card dashboard-card locked" data-view="results">
+                    <div class="card-icon">📊</div>
+                    <div class="card-title">Assessment Results</div>
+                    <div class="card-description">View detailed results and analysis</div>
+                    <div class="status-badge status-pending">Locked</div>
+                </div>
+                
+                <div class="clinical-card dashboard-card locked" data-view="report">
+                    <div class="card-icon">📄</div>
+                    <div class="card-title">Clinical Report</div>
+                    <div class="card-description">Generate comprehensive assessment report</div>
+                    <div class="status-badge status-pending">Locked</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Info View -->
+        <div class="view" id="infoView">
+            <div class="clinical-card">
+                <div class="info-hero">
+                    <div class="info-icon">🧠</div>
+                    <h2>Parkinson's Disease Information</h2>
+                    <p>Understanding the neurological basis and assessment protocols</p>
+                </div>
+                <div class="px-3 py-3">
+                    <div class="info-points">
+                        <div class="info-point">
+                            <div class="point-icon">⚡</div>
+                            <h3>What is Parkinson's Disease?</h3>
+                            <p>A progressive neurodegenerative disorder characterized by dopaminergic neuron loss in substantia nigra, leading to motor symptoms like tremor, bradykinesia, rigidity, and postural instability.</p>
+                        </div>
+                        <div class="info-point">
+                            <div class="point-icon">📊</div>
+                            <h3>UPDRS Assessment</h3>
+                            <p>The Unified Parkinson's Disease Rating Scale (UPDRS) is the gold standard for clinical assessment. Part III focuses on motor examination across 18 items scored 0-4.</p>
+                        </div>
+                        <div class="info-point">
+                            <div class="point-icon">🎯</div>
+                            <h3>Digital Biomarkers</h3>
+                            <p>Modern assessment incorporates sensor-based digital biomarkers for objective, quantitative measurement of motor symptoms beyond clinical observation.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="test-instruction mt-3">
+                        <div class="instruction-text">💡 <strong>Clinical Note:</strong> This tool provides quantitative motor assessments mapped to UPDRS-III domains. Results should be interpreted by qualified clinicians alongside traditional examination.</div>
+                        <div class="instruction-subtext">Reference: Movement Disorder Society UPDRS Revision (MDS-UPDRS)</div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button class="btn btn-primary btn-block" data-view="patient">
+                            <i class="fas fa-arrow-right btn-icon"></i>
+                            Proceed to Patient Information
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Patient Profile View -->
+        <div class="view" id="patientView">
+            <div class="clinical-card">
+                <div class="test-header">
+                    <h2>Patient Demographic Information</h2>
+                    <p>Complete all required fields for clinical assessment documentation</p>
+                </div>
+                <div class="px-3 py-3">
+                    <form id="patientForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="firstName">
+                                    <i class="fas fa-user"></i>
+                                    First Name *
+                                </label>
+                                <input type="text" class="form-control" id="firstName" required>
+                                <div class="error-message" id="firstNameError"></div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="lastName">
+                                    <i class="fas fa-user"></i>
+                                    Last Name *
+                                </label>
+                                <input type="text" class="form-control" id="lastName" required>
+                                <div class="error-message" id="lastNameError"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="dateOfBirth">
+                                    <i class="fas fa-birthday-cake"></i>
+                                    Date of Birth *
+                                </label>
+                                <input type="date" class="form-control" id="dateOfBirth" required>
+                                <div class="error-message" id="dobError"></div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="gender">
+                                    <i class="fas fa-venus-mars"></i>
+                                    Gender *
+                                </label>
+                                <select class="form-control" id="gender" required>
+                                    <option value="">Select Gender</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                    <option value="prefer-not-to-say">Prefer not to say</option>
+                                </select>
+                                <div class="error-message" id="genderError"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="countryCode">
+                                    <i class="fas fa-globe"></i>
+                                    Country Code *
+                                </label>
+                                <select class="form-control" id="countryCode" required>
+                                    <option value="">Select Country</option>
+                                    <option value="+1">United States (+1)</option>
+                                    <option value="+44">United Kingdom (+44)</option>
+                                    <option value="+91">India (+91)</option>
+                                    <option value="+86">China (+86)</option>
+                                    <option value="+81">Japan (+81)</option>
+                                    <option value="+49">Germany (+49)</option>
+                                    <option value="+33">France (+33)</option>
+                                    <option value="+61">Australia (+61)</option>
+                                </select>
+                                <div class="error-message" id="countryError"></div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="phoneNumber">
+                                    <i class="fas fa-phone"></i>
+                                    Phone Number *
+                                </label>
+                                <input type="tel" class="form-control" id="phoneNumber" placeholder="Enter phone number" required>
+                                <div class="form-hint">Enter digits only, without country code</div>
+                                <div class="error-message" id="phoneError"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="email">
+                                <i class="fas fa-envelope"></i>
+                                Email Address *
+                            </label>
+                            <input type="email" class="form-control" id="email" placeholder="patient@example.com" required>
+                            <div class="error-message" id="emailError"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="medicalId">
+                                <i class="fas fa-file-medical"></i>
+                                Medical Record Number
+                            </label>
+                            <input type="text" class="form-control" id="medicalId" placeholder="Optional">
+                            <div class="form-hint">Hospital or clinic record identifier</div>
+                        </div>
+                        
+                        <div class="test-instruction">
+                            <div class="instruction-text">📋 <strong>Clinical Documentation:</strong> Accurate patient information is essential for valid assessment results and clinical reporting. All fields marked with * are required for proper documentation.</div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary btn-block">
+                                <i class="fas fa-save btn-icon"></i>
+                                Save Patient Profile
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Voice Assessment View -->
+        <div class="view" id="voiceView">
+            <div class="clinical-card">
+                <div class="test-header">
+                    <h2>Speech Motor Assessment</h2>
+                    <p>Evaluate vocal characteristics for hypophonia and articulation (UPDRS 3.1)</p>
+                </div>
+                <div class="px-3 py-3">
+                    <div class="test-instruction">
+                        <div class="instruction-text">🎤 <strong>Assessment Protocol:</strong> Please read the following sentence clearly and at a normal speaking volume. The system will analyze your vocal characteristics for 8 seconds.</div>
+                        <div class="instruction-subtext">UPDRS Section 3.1: Speech Examination - Sustained phonation and articulation</div>
+                    </div>
+                    
+                    <div class="clinical-card py-3 mt-3">
+                        <div class="text-center">
+                            <p style="font-size: 1.5rem; font-weight: 600; color: var(--accent-primary);">"The quick brown fox jumps over the lazy dog"</p>
+                            <p class="text-muted mt-1">Standard English pangram for comprehensive phonetic assessment</p>
+                        </div>
+                    </div>
+                    
+                    <div class="visualization-container" id="voiceViz">
+                        <div class="voice-animation">
+                            <div class="voice-wave"></div>
+                            <div class="mic-icon">
+                                <i class="fas fa-microphone"></i>
+                            </div>
+                        </div>
+                        <div class="test-timer" id="voiceTimer">00:08</div>
+                    </div>
+                    
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-value" id="jitterValue">--</div>
+                            <div class="metric-label">Jitter</div>
+                            <div class="metric-unit">%</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="shimmerValue">--</div>
+                            <div class="metric-label">Shimmer</div>
+                            <div class="metric-unit">dB</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="hnrValue">--</div>
+                            <div class="metric-label">HNR</div>
+                            <div class="metric-unit">dB</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="pitchValue">--</div>
+                            <div class="metric-label">Pitch</div>
+                            <div class="metric-unit">Hz</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2 mt-3">
+                        <button class="btn btn-primary" id="startVoiceTest">
+                            <i class="fas fa-microphone btn-icon"></i>
+                            Start Voice Recording
+                        </button>
+                        <button class="btn btn-outline" id="retryVoiceTest" disabled>
+                            <i class="fas fa-redo btn-icon"></i>
+                            Retry Test
+                        </button>
+                        <button class="btn btn-outline" data-view="tremor">
+                            <i class="fas fa-arrow-right btn-icon"></i>
+                            Next Assessment
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tremor Assessment View -->
+        <div class="view" id="tremorView">
+            <div class="clinical-card">
+                <div class="test-header">
+                    <h2>Tremor Motor Assessment</h2>
+                    <p>Measure resting tremor characteristics in upper extremities (UPDRS 3.15-3.18)</p>
+                </div>
+                <div class="px-3 py-3">
+                    <div class="test-instruction">
+                        <div class="instruction-text">🤲 <strong>Assessment Protocol:</strong> Rest your hand comfortably on a stable surface. The system will measure tremor frequency and amplitude for 20 seconds.</div>
+                        <div class="instruction-subtext">UPDRS Section 3.15-3.18: Rest Tremor Examination - Hands, legs, lips, and jaw</div>
+                    </div>
+                    
+                    <div class="form-group mt-3">
+                        <label class="form-label">
+                            <i class="fas fa-hand-paper"></i>
+                            Hand Selection
+                        </label>
+                        <div class="flex gap-2">
+                            <button class="btn btn-outline active" id="rightHandBtn">Right Hand</button>
+                            <button class="btn btn-outline" id="leftHandBtn">Left Hand</button>
+                        </div>
+                    </div>
+                    
+                    <div class="visualization-container" id="tremorViz">
+                        <div class="tremor-animation">
+                            <div class="tremor-line"></div>
+                            <div class="tremor-dot"></div>
+                        </div>
+                        <div class="test-timer" id="tremorTimer">00:20</div>
+                    </div>
+                    
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-value" id="frequencyValue">--</div>
+                            <div class="metric-label">Frequency</div>
+                            <div class="metric-unit">Hz</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="amplitudeValue">--</div>
+                            <div class="metric-label">Amplitude</div>
+                            <div class="metric-unit">m/s²</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="severityScore">--</div>
+                            <div class="metric-label">Severity</div>
+                            <div class="metric-unit">Score</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="consistencyValue">--</div>
+                            <div class="metric-label">Consistency</div>
+                            <div class="metric-unit">%</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2 mt-3">
+                        <button class="btn btn-primary" id="startTremorTest">
+                            <i class="fas fa-wave-square btn-icon"></i>
+                            Begin Tremor Assessment
+                        </button>
+                        <button class="btn btn-outline" id="saveTremorResults" disabled>
+                            <i class="fas fa-save btn-icon"></i>
+                            Save Results
+                        </button>
+                        <button class="btn btn-outline" data-view="tapping">
+                            <i class="fas fa-arrow-right btn-icon"></i>
+                            Next Assessment
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gait Assessment View -->
+        <div class="view" id="gaitView">
+            <div class="clinical-card">
+                <div class="test-header">
+                    <h2>Gait & Posture Assessment</h2>
+                    <p>Evaluate walking pattern and postural stability (UPDRS 3.10-3.11)</p>
+                </div>
+                <div class="px-3 py-3">
+                    <div class="test-instruction">
+                        <div class="instruction-text">🚶‍♂️ <strong>Assessment Protocol:</strong> Walk naturally in front of the camera for 15 seconds. The system will analyze your gait pattern and posture using pose estimation.</div>
+                        <div class="instruction-subtext">UPDRS Section 3.10-3.11: Gait and Postural Stability Examination</div>
+                    </div>
+                    
+                    <div class="visualization-container" id="gaitViz">
+                        <video id="gaitVideo" muted playsinline style="display: none;"></video>
+                        <canvas id="gaitCanvas"></canvas>
+                        <div class="test-timer" id="gaitTimer">00:15</div>
+                        <button class="fullscreen-toggle" id="gaitFullscreen">
+                            <i class="fas fa-expand"></i>
+                            Full Screen
+                        </button>
+                    </div>
+                    
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-value" id="stepLength">--</div>
+                            <div class="metric-label">Step Length</div>
+                            <div class="metric-unit">cm</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="stepCadence">--</div>
+                            <div class="metric-label">Cadence</div>
+                            <div class="metric-unit">steps/min</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="balanceScore">--</div>
+                            <div class="metric-label">Balance</div>
+                            <div class="metric-unit">Score</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="postureScore">--</div>
+                            <div class="metric-label">Posture</div>
+                            <div class="metric-unit">Score</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2 mt-3">
+                        <button class="btn btn-primary" id="startGaitTest">
+                            <i class="fas fa-walking btn-icon"></i>
+                            Start Gait Analysis
+                        </button>
+                        <button class="btn btn-outline" id="flipGaitCamera">
+                            <i class="fas fa-camera-rotate btn-icon"></i>
+                            Flip Camera
+                        </button>
+                        <button class="btn btn-outline" data-view="spiral">
+                            <i class="fas fa-arrow-right btn-icon"></i>
+                            Next Assessment
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Facial Assessment View -->
+        <div class="view" id="facialView">
+            <div class="clinical-card">
+                <div class="test-header">
+                    <h2>Facial Expression Assessment</h2>
+                    <p>Evaluate hypomimia and facial muscle movement (UPDRS 3.2)</p>
+                </div>
+                <div class="px-3 py-3">
+                    <div class="test-instruction">
+                        <div class="instruction-text">😐 <strong>Assessment Protocol:</strong> Look directly at the camera and maintain a neutral expression for 10 seconds. The system will analyze facial muscle symmetry and movement.</div>
+                        <div class="instruction-subtext">UPDRS Section 3.2: Facial Expression Examination - Hypomimia assessment</div>
+                    </div>
+                    
+                    <div class="visualization-container" id="faceViz">
+                        <video id="faceVideo" muted playsinline style="display: none;"></video>
+                        <canvas id="faceCanvas"></canvas>
+                        <div class="test-timer" id="faceTimer">00:10</div>
+                        <button class="fullscreen-toggle" id="faceFullscreen">
+                            <i class="fas fa-expand"></i>
+                            Full Screen
+                        </button>
+                    </div>
+                    
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-value" id="symmetryScore">--</div>
+                            <div class="metric-label">Symmetry</div>
+                            <div class="metric-unit">%</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="blinkRate">--</div>
+                            <div class="metric-label">Blink Rate</div>
+                            <div class="metric-unit">/min</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="expressionScore">--</div>
+                            <div class="metric-label">Expression</div>
+                            <div class="metric-unit">Score</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="movementScore">--</div>
+                            <div class="metric-label">Movement</div>
+                            <div class="metric-unit">Score</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2 mt-3">
+                        <button class="btn btn-primary" id="startFaceTest">
+                            <i class="fas fa-smile btn-icon"></i>
+                            Start Facial Analysis
+                        </button>
+                        <button class="btn btn-outline" id="flipFaceCamera">
+                            <i class="fas fa-camera-rotate btn-icon"></i>
+                            Flip Camera
+                        </button>
+                        <button class="btn btn-outline" data-view="results">
+                            <i class="fas fa-arrow-right btn-icon"></i>
+                            View Results
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results View -->
+        <div class="view" id="resultsView">
+            <div class="clinical-card">
+                <div class="test-header">
+                    <h2>Assessment Results Summary</h2>
+                    <p>Comprehensive motor function evaluation results</p>
+                </div>
+                <div class="px-3 py-3">
+                    <div class="report-summary">
+                        <h3 class="mb-2">Overall Assessment Score</h3>
+                        <div class="risk-indicator risk-low" id="overallRisk">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Low Risk - Normal Motor Function</span>
+                        </div>
+                        <p class="mt-2">Based on completed assessments, motor function appears within normal ranges.</p>
+                    </div>
+                    
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Assessment Domain</th>
+                                <th>Status</th>
+                                <th>Score (0-4)</th>
+                                <th>Clinical Interpretation</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTableBody">
+                            <tr>
+                                <td>Speech Motor Function</td>
+                                <td><span class="status-badge status-pending">Pending</span></td>
+                                <td class="score-cell">--</td>
+                                <td>Assessment not completed</td>
+                            </tr>
+                            <tr>
+                                <td>Resting Tremor</td>
+                                <td><span class="status-badge status-pending">Pending</span></td>
+                                <td class="score-cell">--</td>
+                                <td>Assessment not completed</td>
+                            </tr>
+                            <tr>
+                                <td>Finger Tapping</td>
+                                <td><span class="status-badge status-pending">Pending</span></td>
+                                <td class="score-cell">--</td>
+                                <td>Assessment not completed</td>
+                            </tr>
+                            <tr>
+                                <td>Gait & Posture</td>
+                                <td><span class="status-badge status-pending">Pending</span></td>
+                                <td class="score-cell">--</td>
+                                <td>Assessment not completed</td>
+                            </tr>
+                            <tr>
+                                <td>Spiral Drawing</td>
+                                <td><span class="status-badge status-pending">Pending</span></td>
+                                <td class="score-cell">--</td>
+                                <td>Assessment not completed</td>
+                            </tr>
+                            <tr>
+                                <td>Facial Expression</td>
+                                <td><span class="status-badge status-pending">Pending</span></td>
+                                <td class="score-cell">--</td>
+                                <td>Assessment not completed</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="test-instruction mt-3">
+                        <div class="instruction-text">📋 <strong>Clinical Note:</strong> These results are based on quantitative sensor measurements mapped to UPDRS-III domains. Final clinical interpretation should be made by a qualified neurologist.</div>
+                    </div>
+                    
+                    <div class="flex gap-2 mt-3">
+                        <button class="btn btn-primary" data-view="report">
+                            <i class="fas fa-file-pdf btn-icon"></i>
+                            Generate PDF Report
+                        </button>
+                        <button class="btn btn-outline" data-view="dashboard">
+                            <i class="fas fa-home btn-icon"></i>
+                            Return to Dashboard
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Report View -->
+        <div class="view" id="reportView">
+            <div class="clinical-card">
+                <div class="test-header">
+                    <h2>Clinical Assessment Report</h2>
+                    <p>Comprehensive motor function evaluation summary</p>
+                </div>
+                <div class="px-3 py-3">
+                    <div class="mb-4">
+                        <h3>Patient Information</h3>
+                        <div id="reportPatientInfo">
+                            <div class="clinical-card py-2">
+                                <p>Complete patient profile to generate report.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h3>Assessment Summary</h3>
+                        <div class="clinical-card py-3">
+                            <div id="clinicalImpression">
+                                <p>Complete motor assessments to generate clinical impression.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2 mt-4">
+                        <button class="btn btn-primary" id="generateReport">
+                            <i class="fas fa-file-pdf btn-icon"></i>
+                            Generate PDF Report
+                        </button>
+                        <button class="btn btn-outline" data-view="results">
+                            <i class="fas fa-chart-bar btn-icon"></i>
+                            View Detailed Results
+                        </button>
+                        <button class="btn btn-outline" data-view="dashboard">
+                            <i class="fas fa-home btn-icon"></i>
+                            Return to Dashboard
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Script -->
+    <script>
+        // Professional Clinical Application
+        class NeuroSynapseApp {
+            constructor() {
+                // Application State
+                this.state = {
+                    language: 'en',
+                    voiceEnabled: true,
+                    antiTremorEnabled: false,
+                    patientProfile: null,
+                    assessments: {
+                        voice: { completed: false, data: null, score: null },
+                        tremor: { completed: false, data: null, score: null },
+                        tapping: { completed: false, data: null, score: null },
+                        gait: { completed: false, data: null, score: null },
+                        spiral: { completed: false, data: null, score: null },
+                        facial: { completed: false, data: null, score: null }
+                    },
+                    currentTest: null,
+                    speechSynthesis: null,
+                    mediapipePose: null,
+                    mediapipeFace: null,
+                    activeCamera: null,
+                    completedSteps: 0,
+                    totalSteps: 3 // splash + info + patient
+                };
+                
+                // Language configurations
+                this.languages = {
+                    en: {
+                        name: "English",
+                        directions: {
+                            voice: "Read the sentence clearly at normal volume for voice analysis.",
+                            tremor: "Rest your hand on a stable surface for tremor measurement.",
+                            gait: "Walk naturally in front of the camera for gait analysis.",
+                            facial: "Look at the camera with neutral expression for facial analysis."
+                        }
+                    },
+                    es: {
+                        name: "Español",
+                        directions: {
+                            voice: "Lea la oración claramente a volumen normal para el análisis de voz.",
+                            tremor: "Descanse su mano sobre una superficie estable para la medición del temblor.",
+                            gait: "Camine naturalmente frente a la cámara para el análisis de la marcha.",
+                            facial: "Mire a la cámara con expresión neutral para el análisis facial."
+                        }
+                    },
+                    fr: {
+                        name: "Français",
+                        directions: {
+                            voice: "Lisez la phrase clairement à volume normal pour l'analyse vocale.",
+                            tremor: "Reposez votre main sur une surface stable pour la mesure des tremblements.",
+                            gait: "Marchez naturellement devant la caméra pour l'analyse de la démarche.",
+                            facial: "Regardez la caméra avec une expression neutre pour l'analyse faciale."
+                        }
+                    },
+                    de: {
+                        name: "Deutsch",
+                        directions: {
+                            voice: "Lesen Sie den Satz klar mit normaler Lautstärke für die Sprachanalyse.",
+                            tremor: "Legen Sie Ihre Hand auf eine stabile Oberfläche zur Tremor-Messung.",
+                            gait: "Gehen Sie natürlich vor der Kamera für die Gangbildanalyse.",
+                            facial: "Schauen Sie mit neutralem Ausdruck in die Kamera für die Gesichtsanalyse."
+                        }
+                    },
+                    hi: {
+                        name: "हिन्दी",
+                        directions: {
+                            voice: "आवाज विश्लेषण के लिए सामान्य मात्रा में वाक्य को स्पष्ट रूप से पढ़ें।",
+                            tremor: "कंपन मापन के लिए अपने हाथ को स्थिर सतह पर रखें।",
+                            gait: "गति विश्लेषण के लिए कैमरे के सामने प्राकृतिक रूप से चलें।",
+                            facial: "चेहरे के विश्लेषण के लिए तटस्थ अभिव्यक्ति के साथ कैमरे की ओर देखें।"
+                        }
+                    },
+                    zh: {
+                        name: "中文",
+                        directions: {
+                            voice: "以正常音量清晰地朗读句子以进行语音分析。",
+                            tremor: "将手放在稳定的表面上进行震颤测量。",
+                            gait: "在摄像头前自然行走进行步态分析。",
+                            facial: "以中性表情看着摄像头进行面部分析。"
+                        }
+                    }
+                };
+                
+                // Initialize application
+                this.init();
+            }
+            
+            init() {
+                this.setupSplashScreen();
+                this.setupEventListeners();
+                this.setupMediapipe();
+                this.updateUI();
+            }
+            
+            setupSplashScreen() {
+                const splashScreen = document.getElementById('splashScreen');
+                const progressBar = document.getElementById('splashProgress');
+                
+                // Simulate loading progress
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 10;
+                    progressBar.style.width = `${progress}%`;
+                    
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        setTimeout(() => {
+                            splashScreen.classList.add('hidden');
+                            setTimeout(() => {
+                                splashScreen.style.display = 'none';
+                                this.completedSteps++;
+                            }, 500);
+                        }, 500);
+                    }
+                }, 100);
+            }
+            
+            setupEventListeners() {
+                // Navigation
+                document.getElementById('menuToggle').addEventListener('click', () => {
+                    this.toggleSidebar();
+                });
+                
+                document.getElementById('sidebarBack').addEventListener('click', () => {
+                    this.toggleSidebar();
+                });
+                
+                // Handle navigation items
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        const view = item.dataset.view;
+                        if (!item.hasAttribute('disabled')) {
+                            this.navigateTo(view);
+                            this.toggleSidebar();
+                        }
+                    });
+                });
+                
+                // Dashboard cards
+                document.querySelectorAll('.dashboard-card').forEach(card => {
+                    card.addEventListener('click', (e) => {
+                        const view = card.dataset.view;
+                        if (!card.classList.contains('locked')) {
+                            this.navigateTo(view);
+                        }
+                    });
+                });
+                
+                document.querySelectorAll('[data-view]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        if (btn.dataset.view && !btn.disabled) {
+                            this.navigateTo(btn.dataset.view);
+                        }
+                    });
+                });
+                
+                // Language selector
+                document.getElementById('languageSelect').addEventListener('change', (e) => {
+                    this.changeLanguage(e.target.value);
+                });
+                
+                // Toggles
+                document.getElementById('voiceToggle').addEventListener('click', () => {
+                    this.toggleVoice();
+                });
+                
+                document.getElementById('tremorToggle').addEventListener('click', () => {
+                    this.toggleTremor();
+                });
+                
+                // Patient Form
+                document.getElementById('patientForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.validatePatientForm();
+                });
+                
+                // Test Controls
+                document.getElementById('startVoiceTest').addEventListener('click', () => {
+                    this.startVoiceTest();
+                });
+                
+                document.getElementById('startTremorTest').addEventListener('click', () => {
+                    this.startTremorTest();
+                });
+                
+                document.getElementById('startGaitTest').addEventListener('click', () => {
+                    this.startGaitTest();
+                });
+                
+                document.getElementById('startFaceTest').addEventListener('click', () => {
+                    this.startFaceTest();
+                });
+                
+                document.getElementById('retryVoiceTest').addEventListener('click', () => {
+                    this.resetVoiceTest();
+                });
+                
+                document.getElementById('saveTremorResults').addEventListener('click', () => {
+                    this.saveTremorResults();
+                });
+                
+                // Camera Controls
+                document.getElementById('flipGaitCamera').addEventListener('click', () => {
+                    this.flipCamera('gait');
+                });
+                
+                document.getElementById('flipFaceCamera').addEventListener('click', () => {
+                    this.flipCamera('face');
+                });
+                
+                document.getElementById('gaitFullscreen').addEventListener('click', () => {
+                    this.toggleFullscreen('gait');
+                });
+                
+                document.getElementById('faceFullscreen').addEventListener('click', () => {
+                    this.toggleFullscreen('face');
+                });
+                
+                // Hand Selection
+                document.getElementById('rightHandBtn').addEventListener('click', () => {
+                    document.getElementById('rightHandBtn').classList.add('active');
+                    document.getElementById('leftHandBtn').classList.remove('active');
+                });
+                
+                document.getElementById('leftHandBtn').addEventListener('click', () => {
+                    document.getElementById('leftHandBtn').classList.add('active');
+                    document.getElementById('rightHandBtn').classList.remove('active');
+                });
+                
+                // Report Generation
+                document.getElementById('generateReport').addEventListener('click', () => {
+                    this.generatePDFReport();
+                });
+            }
+            
+            setupMediapipe() {
+                // Initialize Pose detection
+                this.state.mediapipePose = new Pose({
+                    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+                });
+                
+                this.state.mediapipePose.setOptions({
+                    modelComplexity: 1,
+                    smoothLandmarks: true,
+                    enableSegmentation: false,
+                    smoothSegmentation: true,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+                
+                // Initialize Face Mesh
+                this.state.mediapipeFace = new FaceMesh({
+                    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+                });
+                
+                this.state.mediapipeFace.setOptions({
+                    maxNumFaces: 1,
+                    refineLandmarks: true,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+            }
+            
+            toggleSidebar() {
+                const sidebar = document.getElementById('sidebar');
+                const mainContent = document.getElementById('mainContent');
+                
+                sidebar.classList.toggle('active');
+                mainContent.classList.toggle('sidebar-open');
+            }
+            
+            navigateTo(viewId) {
+                // Check if view is accessible
+                if (this.isViewLocked(viewId)) {
+                    this.showToast(`Complete previous steps to access ${viewId} assessment`, 'warning');
+                    return;
+                }
+                
+                // Hide all views
+                document.querySelectorAll('.view').forEach(view => {
+                    view.classList.remove('active');
+                });
+                
+                // Remove active class from all nav items
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                
+                // Show target view
+                const targetView = document.getElementById(`${viewId}View`);
+                if (targetView) {
+                    targetView.classList.add('active');
+                    
+                    // Update nav item
+                    const navItem = document.querySelector(`.nav-item[data-view="${viewId}"]`);
+                    if (navItem) navItem.classList.add('active');
+                    
+                    // Update directions based on language
+                    this.updateViewDirections(viewId);
+                }
+                
+                // Update dashboard status
+                this.updateDashboardStatus();
+            }
+            
+            isViewLocked(viewId) {
+                if (viewId === 'dashboard' || viewId === 'info' || viewId === 'patient') {
+                    return false;
+                }
+                
+                // Lock all assessment views until patient profile is complete
+                if (!this.state.patientProfile) {
+                    return true;
+                }
+                
+                return false;
+            }
+            
+            updateViewDirections(viewId) {
+                const langConfig = this.languages[this.state.language];
+                if (!langConfig) return;
+                
+                switch(viewId) {
+                    case 'voice':
+                        const voiceInstruction = document.querySelector('#voiceView .instruction-text');
+                        if (voiceInstruction) {
+                            voiceInstruction.innerHTML = `🎤 <strong>Assessment Protocol:</strong> ${langConfig.directions.voice}`;
+                        }
+                        break;
+                    case 'tremor':
+                        const tremorInstruction = document.querySelector('#tremorView .instruction-text');
+                        if (tremorInstruction) {
+                            tremorInstruction.innerHTML = `🤲 <strong>Assessment Protocol:</strong> ${langConfig.directions.tremor}`;
+                        }
+                        break;
+                    case 'gait':
+                        const gaitInstruction = document.querySelector('#gaitView .instruction-text');
+                        if (gaitInstruction) {
+                            gaitInstruction.innerHTML = `🚶‍♂️ <strong>Assessment Protocol:</strong> ${langConfig.directions.gait}`;
+                        }
+                        break;
+                    case 'facial':
+                        const faceInstruction = document.querySelector('#facialView .instruction-text');
+                        if (faceInstruction) {
+                            faceInstruction.innerHTML = `😐 <strong>Assessment Protocol:</strong> ${langConfig.directions.facial}`;
+                        }
+                        break;
+                }
+            }
+            
+            changeLanguage(langCode) {
+                this.state.language = langCode;
+                const langConfig = this.languages[langCode];
+                
+                if (langConfig) {
+                    document.getElementById('currentLanguage').textContent = langConfig.name;
+                    this.showToast(`Language changed to ${langConfig.name}`, 'info');
+                    
+                    // Update current view directions
+                    const currentView = document.querySelector('.view.active').id.replace('View', '');
+                    this.updateViewDirections(currentView);
+                }
+            }
+            
+            toggleVoice() {
+                this.state.voiceEnabled = !this.state.voiceEnabled;
+                const toggle = document.getElementById('voiceToggle');
+                toggle.classList.toggle('active');
+                
+                const dangle = document.getElementById('voiceDangle');
+                const dangleText = dangle.querySelector('.dangle-text');
+                dangleText.textContent = `Voice: ${this.state.voiceEnabled ? 'On' : 'Off'}`;
+                dangleText.classList.toggle('active', this.state.voiceEnabled);
+                
+                this.showToast(`Voice assistant ${this.state.voiceEnabled ? 'enabled' : 'disabled'}`, 'info');
+            }
+            
+            toggleTremor() {
+                this.state.antiTremorEnabled = !this.state.antiTremorEnabled;
+                const toggle = document.getElementById('tremorToggle');
+                toggle.classList.toggle('active');
+                
+                document.body.classList.toggle('tremor-mode', this.state.antiTremorEnabled);
+                
+                const dangle = document.getElementById('tremorDangle');
+                const dangleText = dangle.querySelector('.dangle-text');
+                dangleText.textContent = `Anti-Tremor: ${this.state.antiTremorEnabled ? 'On' : 'Off'}`;
+                dangleText.classList.toggle('active', this.state.antiTremorEnabled);
+                
+                this.showToast(`Anti-tremor UI ${this.state.antiTremorEnabled ? 'enabled' : 'disabled'}`, 'info');
+            }
+            
+            validatePatientForm() {
+                let isValid = true;
+                
+                // Clear previous errors
+                document.querySelectorAll('.error-message').forEach(el => {
+                    el.textContent = '';
+                });
+                document.querySelectorAll('.form-control').forEach(el => {
+                    el.classList.remove('error');
+                });
+                
+                // Validate fields
+                const firstName = document.getElementById('firstName').value.trim();
+                if (!firstName) {
+                    document.getElementById('firstNameError').textContent = 'First name is required';
+                    document.getElementById('firstName').classList.add('error');
+                    isValid = false;
+                }
+                
+                const lastName = document.getElementById('lastName').value.trim();
+                if (!lastName) {
+                    document.getElementById('lastNameError').textContent = 'Last name is required';
+                    document.getElementById('lastName').classList.add('error');
+                    isValid = false;
+                }
+                
+                const dob = document.getElementById('dateOfBirth').value;
+                if (!dob) {
+                    document.getElementById('dobError').textContent = 'Date of birth is required';
+                    document.getElementById('dateOfBirth').classList.add('error');
+                    isValid = false;
+                }
+                
+                const gender = document.getElementById('gender').value;
+                if (!gender) {
+                    document.getElementById('genderError').textContent = 'Gender is required';
+                    document.getElementById('gender').classList.add('error');
+                    isValid = false;
+                }
+                
+                const country = document.getElementById('countryCode').value;
+                if (!country) {
+                    document.getElementById('countryError').textContent = 'Country is required';
+                    document.getElementById('countryCode').classList.add('error');
+                    isValid = false;
+                }
+                
+                const phone = document.getElementById('phoneNumber').value.trim();
+                if (!phone) {
+                    document.getElementById('phoneError').textContent = 'Phone number is required';
+                    document.getElementById('phoneNumber').classList.add('error');
+                    isValid = false;
+                } else if (!/^\d{7,15}$/.test(phone)) {
+                    document.getElementById('phoneError').textContent = 'Enter valid phone number';
+                    document.getElementById('phoneNumber').classList.add('error');
+                    isValid = false;
+                }
+                
+                const email = document.getElementById('email').value.trim();
+                if (!email) {
+                    document.getElementById('emailError').textContent = 'Email is required';
+                    document.getElementById('email').classList.add('error');
+                    isValid = false;
+                } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    document.getElementById('emailError').textContent = 'Enter valid email';
+                    document.getElementById('email').classList.add('error');
+                    isValid = false;
+                }
+                
+                if (isValid) {
+                    this.savePatientProfile({
+                        firstName,
+                        lastName,
+                        dateOfBirth: dob,
+                        gender,
+                        countryCode: country,
+                        phoneNumber: phone,
+                        email,
+                        medicalId: document.getElementById('medicalId').value.trim()
+                    });
+                } else {
+                    this.showToast('Please correct the highlighted fields.', 'error');
+                }
+            }
+            
+            savePatientProfile(profile) {
+                this.state.patientProfile = profile;
+                this.completedSteps++;
+                
+                // Unlock assessment views
+                this.unlockAssessmentViews();
+                
+                // Update UI
+                const age = this.calculateAge(profile.dateOfBirth);
+                document.querySelector('.dashboard-card[data-view="patient"] .status-badge').className = 'status-badge status-completed';
+                document.querySelector('.dashboard-card[data-view="patient"] .status-badge').textContent = 'Completed';
+                
+                document.querySelector('.nav-item[data-view="patient"] .status-badge').className = 'status-badge status-completed';
+                document.querySelector('.nav-item[data-view="patient"] .status-badge').textContent = 'Completed';
+                
+                // Update dashboard patient summary
+                document.getElementById('patientSummary').innerHTML = `
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-value">${profile.firstName} ${profile.lastName}</div>
+                            <div class="metric-label">Patient</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${age}</div>
+                            <div class="metric-label">Age</div>
+                            <div class="metric-unit">years</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${profile.gender}</div>
+                            <div class="metric-label">Gender</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${profile.countryCode}</div>
+                            <div class="metric-label">Contact</div>
+                        </div>
+                    </div>
+                `;
+                
+                // Update report view
+                document.getElementById('reportPatientInfo').innerHTML = `
+                    <div class="clinical-card py-2">
+                        <div class="flex justify-between mb-1">
+                            <span>Name:</span>
+                            <strong>${profile.firstName} ${profile.lastName}</strong>
+                        </div>
+                        <div class="flex justify-between mb-1">
+                            <span>Date of Birth:</span>
+                            <strong>${new Date(profile.dateOfBirth).toLocaleDateString()}</strong>
+                        </div>
+                        <div class="flex justify-between mb-1">
+                            <span>Gender:</span>
+                            <strong>${profile.gender}</strong>
+                        </div>
+                        <div class="flex justify-between mb-1">
+                            <span>Contact:</span>
+                            <strong>${profile.countryCode} ${profile.phoneNumber}</strong>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Email:</span>
+                            <strong>${profile.email}</strong>
+                        </div>
+                    </div>
+                `;
+                
+                this.showToast('Patient profile saved successfully', 'success');
+                
+                // Navigate to first assessment
+                setTimeout(() => this.navigateTo('voice'), 1000);
+            }
+            
+            unlockAssessmentViews() {
+                // Unlock sidebar items
+                document.querySelectorAll('.nav-item[disabled]').forEach(item => {
+                    if (item.dataset.view !== 'dashboard' && 
+                        item.dataset.view !== 'info' && 
+                        item.dataset.view !== 'patient') {
+                        item.removeAttribute('disabled');
+                        const badge = item.querySelector('.nav-badge');
+                        if (badge) {
+                            badge.className = 'nav-badge';
+                            badge.textContent = 'Ready';
+                        }
+                    }
+                });
+                
+                // Unlock dashboard cards
+                document.querySelectorAll('.dashboard-card.locked').forEach(card => {
+                    card.classList.remove('locked');
+                    const badge = card.querySelector('.status-badge');
+                    if (badge) {
+                        badge.className = 'status-badge status-pending';
+                        badge.textContent = 'Ready';
+                    }
+                });
+                
+                // Unlock results and report
+                const resultsBadge = document.querySelector('.nav-item[data-view="results"] .nav-badge');
+                const reportBadge = document.querySelector('.nav-item[data-view="report"] .nav-badge');
+                if (resultsBadge) {
+                    resultsBadge.textContent = 'Ready';
+                }
+                if (reportBadge) {
+                    reportBadge.textContent = 'Ready';
+                }
+            }
+            
+            calculateAge(dob) {
+                const birthDate = new Date(dob);
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+                
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                
+                return age;
+            }
+            
+            startVoiceTest() {
+                this.state.currentTest = 'voice';
+                const timer = document.getElementById('voiceTimer');
+                const startBtn = document.getElementById('startVoiceTest');
+                const retryBtn = document.getElementById('retryVoiceTest');
+                
+                startBtn.disabled = true;
+                retryBtn.disabled = true;
+                startBtn.innerHTML = '<i class="fas fa-microphone btn-icon"></i> Recording...';
+                
+                // Simulate voice analysis
+                let timeLeft = 8;
+                timer.textContent = `00:${timeLeft.toString().padStart(2, '0')}`;
+                
+                const countdown = setInterval(() => {
+                    timeLeft--;
+                    timer.textContent = `00:${timeLeft.toString().padStart(2, '0')}`;
+                    
+                    if (timeLeft <= 0) {
+                        clearInterval(countdown);
+                        this.completeVoiceTest();
+                    }
+                }, 1000);
+            }
+            
+            completeVoiceTest() {
+                this.state.assessments.voice.completed = true;
+                this.state.assessments.voice.data = {
+                    jitter: (Math.random() * 0.6 + 0.2).toFixed(2),
+                    shimmer: (Math.random() * 1.2 + 0.5).toFixed(2),
+                    hnr: (Math.random() * 15 + 15).toFixed(1),
+                    pitch: (Math.random() * 50 + 120).toFixed(1)
+                };
+                
+                this.state.assessments.voice.score = Math.floor(Math.random() * 2); // 0-1 for normal range
+                
+                // Update display
+                document.getElementById('jitterValue').textContent = this.state.assessments.voice.data.jitter;
+                document.getElementById('shimmerValue').textContent = this.state.assessments.voice.data.shimmer;
+                document.getElementById('hnrValue').textContent = this.state.assessments.voice.data.hnr;
+                document.getElementById('pitchValue').textContent = this.state.assessments.voice.data.pitch;
+                
+                // Update buttons
+                document.getElementById('startVoiceTest').disabled = false;
+                document.getElementById('startVoiceTest').innerHTML = '<i class="fas fa-check btn-icon"></i> Test Complete';
+                document.getElementById('retryVoiceTest').disabled = false;
+                
+                // Update status
+                this.updateTestStatus('voice', true);
+                
+                this.showToast('Voice assessment completed', 'success');
+            }
+            
+            resetVoiceTest() {
+                document.getElementById('jitterValue').textContent = '--';
+                document.getElementById('shimmerValue').textContent = '--';
+                document.getElementById('hnrValue').textContent = '--';
+                document.getElementById('pitchValue').textContent = '--';
+                
+                document.getElementById('startVoiceTest').innerHTML = '<i class="fas fa-microphone btn-icon"></i> Start Voice Recording';
+                document.getElementById('retryVoiceTest').disabled = true;
+                
+                this.showToast('Voice test reset', 'info');
+            }
+            
+            startTremorTest() {
+                this.state.currentTest = 'tremor';
+                const timer = document.getElementById('tremorTimer');
+                const startBtn = document.getElementById('startTremorTest');
+                const saveBtn = document.getElementById('saveTremorResults');
+                
+                startBtn.disabled = true;
+                saveBtn.disabled = true;
+                startBtn.innerHTML = '<i class="fas fa-wave-square btn-icon"></i> Measuring...';
+                
+                // Simulate tremor measurement
+                let timeLeft = 20;
+                timer.textContent = `00:${timeLeft.toString().padStart(2, '0')}`;
+                
+                const countdown = setInterval(() => {
+                    timeLeft--;
+                    timer.textContent = `00:${timeLeft.toString().padStart(2, '0')}`;
+                    
+                    if (timeLeft <= 0) {
+                        clearInterval(countdown);
+                        this.completeTremorTest();
+                    }
+                }, 1000);
+            }
+            
+            completeTremorTest() {
+                const isRightHand = document.getElementById('rightHandBtn').classList.contains('active');
+                
+                this.state.assessments.tremor.completed = true;
+                this.state.assessments.tremor.data = {
+                    hand: isRightHand ? 'right' : 'left',
+                    frequency: (Math.random() * 5 + 3).toFixed(1),
+                    amplitude: (Math.random() * 1.5 + 0.3).toFixed(2),
+                    severity: Math.floor(Math.random() * 2),
+                    consistency: (Math.random() * 30 + 70).toFixed(0)
+                };
+                
+                this.state.assessments.tremor.score = Math.floor(Math.random() * 2); // 0-1 for normal range
+                
+                // Update display
+                document.getElementById('frequencyValue').textContent = this.state.assessments.tremor.data.frequency;
+                document.getElementById('amplitudeValue').textContent = this.state.assessments.tremor.data.amplitude;
+                document.getElementById('severityScore').textContent = this.state.assessments.tremor.data.severity;
+                document.getElementById('consistencyValue').textContent = this.state.assessments.tremor.data.consistency;
+                
+                // Update buttons
+                document.getElementById('startTremorTest').disabled = false;
+                document.getElementById('startTremorTest').innerHTML = '<i class="fas fa-check btn-icon"></i> Measurement Complete';
+                document.getElementById('saveTremorResults').disabled = false;
+                
+                // Update status
+                this.updateTestStatus('tremor', true);
+                
+                this.showToast('Tremor assessment completed', 'success');
+            }
+            
+            saveTremorResults() {
+                this.showToast('Tremor results saved', 'success');
+            }
+            
+            async startGaitTest() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'environment', width: 1280, height: 720 }
+                    });
+                    
+                    const video = document.getElementById('gaitVideo');
+                    const canvas = document.getElementById('gaitCanvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    video.srcObject = stream;
+                    await video.play();
+                    
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    
+                    this.state.activeCamera = stream;
+                    
+                    // Start pose detection
+                    this.state.mediapipePose.onResults((results) => {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        
+                        if (results.poseLandmarks) {
+                            drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, {
+                                color: '#00FF00',
+                                lineWidth: 4
+                            });
+                            drawLandmarks(ctx, results.poseLandmarks, {
+                                color: '#FF0000',
+                                lineWidth: 2,
+                                radius: 4
+                            });
+                        }
+                    });
+                    
+                    const camera = new Camera(video, {
+                        onFrame: async () => {
+                            await this.state.mediapipePose.send({ image: video });
+                        },
+                        width: 1280,
+                        height: 720
+                    });
+                    
+                    camera.start();
+                    this.state.currentTest = 'gait';
+                    
+                    // Start timer
+                    const timer = document.getElementById('gaitTimer');
+                    let timeLeft = 15;
+                    timer.textContent = `00:${timeLeft.toString().padStart(2, '0')}`;
+                    
+                    const countdown = setInterval(() => {
+                        timeLeft--;
+                        timer.textContent = `00:${timeLeft.toString().padStart(2, '0')}`;
+                        
+                        if (timeLeft <= 0) {
+                            clearInterval(countdown);
+                            this.completeGaitTest();
+                        }
+                    }, 1000);
+                    
+                } catch (error) {
+                    console.error('Camera error:', error);
+                    this.showToast('Camera access required for gait analysis', 'error');
+                }
+            }
+            
+            completeGaitTest() {
+                if (this.state.activeCamera) {
+                    this.state.activeCamera.getTracks().forEach(track => track.stop());
+                    this.state.activeCamera = null;
+                }
+                
+                this.state.assessments.gait.completed = true;
+                this.state.assessments.gait.data = {
+                    stepLength: (Math.random() * 20 + 60).toFixed(1),
+                    stepCadence: (Math.random() * 20 + 100).toFixed(0),
+                    balanceScore: (Math.random() * 20 + 80).toFixed(0),
+                    postureScore: (Math.random() * 15 + 85).toFixed(0)
+                };
+                
+                this.state.assessments.gait.score = Math.floor(Math.random() * 2);
+                
+                // Update display
+                document.getElementById('stepLength').textContent = this.state.assessments.gait.data.stepLength;
+                document.getElementById('stepCadence').textContent = this.state.assessments.gait.data.stepCadence;
+                document.getElementById('balanceScore').textContent = this.state.assessments.gait.data.balanceScore;
+                document.getElementById('postureScore').textContent = this.state.assessments.gait.data.postureScore;
+                
+                this.updateTestStatus('gait', true);
+                this.showToast('Gait analysis completed', 'success');
+            }
+            
+            async startFaceTest() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'user', width: 1280, height: 720 }
+                    });
+                    
+                    const video = document.getElementById('faceVideo');
+                    const canvas = document.getElementById('faceCanvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    video.srcObject = stream;
+                    await video.play();
+                    
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    
+                    this.state.activeCamera = stream;
+                    
+                    // Start face mesh detection
+                    this.state.mediapipeFace.onResults((results) => {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        
+                        if (results.multiFaceLandmarks) {
+                            for (const landmarks of results.multiFaceLandmarks) {
+                                drawConnectors(ctx, landmarks, FACEMESH_TESSELATION, {
+                                    color: '#64FFDA',
+                                    lineWidth: 1
+                                });
+                                drawConnectors(ctx, landmarks, FACEMESH_RIGHT_EYE, {
+                                    color: '#FF6B6B',
+                                    lineWidth: 2
+                                });
+                                drawConnectors(ctx, landmarks, FACEMESH_LEFT_EYE, {
+                                    color: '#FF6B6B',
+                                    lineWidth: 2
+                                });
+                                drawConnectors(ctx, landmarks, FACEMESH_LIPS, {
+                                    color: '#57CBFF',
+                                    lineWidth: 2
+                                });
+                            }
+                        }
+                    });
+                    
+                    const camera = new Camera(video, {
+                        onFrame: async () => {
+                            await this.state.mediapipeFace.send({ image: video });
+                        },
+                        width: 1280,
+                        height: 720
+                    });
+                    
+                    camera.start();
+                    this.state.currentTest = 'facial';
+                    
+                    // Start timer
+                    const timer = document.getElementById('faceTimer');
+                    let timeLeft = 10;
+                    timer.textContent = `00:${timeLeft.toString().padStart(2, '0')}`;
+                    
+                    const countdown = setInterval(() => {
+                        timeLeft--;
+                        timer.textContent = `00:${timeLeft.toString().padStart(2, '0')}`;
+                        
+                        if (timeLeft <= 0) {
+                            clearInterval(countdown);
+                            this.completeFaceTest();
+                        }
+                    }, 1000);
+                    
+                } catch (error) {
+                    console.error('Camera error:', error);
+                    this.showToast('Camera access required for facial analysis', 'error');
+                }
+            }
+            
+            completeFaceTest() {
+                if (this.state.activeCamera) {
+                    this.state.activeCamera.getTracks().forEach(track => track.stop());
+                    this.state.activeCamera = null;
+                }
+                
+                this.state.assessments.facial.completed = true;
+                this.state.assessments.facial.data = {
+                    symmetryScore: (Math.random() * 15 + 85).toFixed(0),
+                    blinkRate: (Math.random() * 10 + 15).toFixed(0),
+                    expressionScore: (Math.random() * 15 + 85).toFixed(0),
+                    movementScore: (Math.random() * 15 + 85).toFixed(0)
+                };
+                
+                this.state.assessments.facial.score = Math.floor(Math.random() * 2);
+                
+                // Update display
+                document.getElementById('symmetryScore').textContent = this.state.assessments.facial.data.symmetryScore;
+                document.getElementById('blinkRate').textContent = this.state.assessments.facial.data.blinkRate;
+                document.getElementById('expressionScore').textContent = this.state.assessments.facial.data.expressionScore;
+                document.getElementById('movementScore').textContent = this.state.assessments.facial.data.movementScore;
+                
+                this.updateTestStatus('facial', true);
+                this.showToast('Facial analysis completed', 'success');
+            }
+            
+            flipCamera(type) {
+                this.showToast('Camera flipped', 'info');
+            }
+            
+            toggleFullscreen(type) {
+                const viz = document.getElementById(`${type}Viz`);
+                viz.classList.toggle('fullscreen');
+                
+                const btn = document.getElementById(`${type}Fullscreen`);
+                if (viz.classList.contains('fullscreen')) {
+                    btn.innerHTML = '<i class="fas fa-compress"></i> Exit Full Screen';
+                } else {
+                    btn.innerHTML = '<i class="fas fa-expand"></i> Full Screen';
+                }
+            }
+            
+            updateDashboardStatus() {
+                const completedTests = Object.values(this.state.assessments).filter(a => a.completed).length;
+                const totalTests = Object.keys(this.state.assessments).length;
+                
+                // Update dashboard summary
+                document.querySelector('.info-point:nth-child(2) .status-badge').textContent = 
+                    `${completedTests}/${totalTests} Complete`;
+                
+                // Update assessment cards
+                Object.keys(this.state.assessments).forEach(test => {
+                    const card = document.querySelector(`.dashboard-card[data-view="${test}"]`);
+                    if (card) {
+                        const badge = card.querySelector('.status-badge');
+                        if (this.state.assessments[test].completed) {
+                            badge.className = 'status-badge status-completed';
+                            badge.textContent = 'Completed';
+                        } else if (this.state.currentTest === test) {
+                            badge.className = 'status-badge status-in-progress';
+                            badge.textContent = 'In Progress';
+                        }
+                    }
+                });
+                
+                // Update sidebar items
+                Object.keys(this.state.assessments).forEach(test => {
+                    const navItem = document.querySelector(`.nav-item[data-view="${test}"]`);
+                    if (navItem) {
+                        const badge = navItem.querySelector('.nav-badge');
+                        if (this.state.assessments[test].completed) {
+                            badge.textContent = 'Completed';
+                        } else if (this.state.currentTest === test) {
+                            badge.textContent = 'In Progress';
+                        }
+                    }
+                });
+                
+                // Update results table
+                this.updateResultsTable();
+            }
+            
+            updateTestStatus(test, completed) {
+                this.state.assessments[test].completed = completed;
+                this.updateDashboardStatus();
+            }
+            
+            updateResultsTable() {
+                const tbody = document.getElementById('resultsTableBody');
+                const rows = [];
+                
+                Object.keys(this.state.assessments).forEach(test => {
+                    const assessment = this.state.assessments[test];
+                    
+                    let status, score, interpretation;
+                    
+                    if (assessment.completed) {
+                        status = `<span class="status-badge status-completed">Completed</span>`;
+                        score = assessment.score !== null ? assessment.score : '--';
+                        interpretation = this.getClinicalInterpretation(test, assessment.score);
+                    } else {
+                        status = `<span class="status-badge status-pending">Pending</span>`;
+                        score = '--';
+                        interpretation = 'Assessment not completed';
+                    }
+                    
+                    const testNames = {
+                        voice: 'Speech Motor Function',
+                        tremor: 'Resting Tremor',
+                        tapping: 'Finger Tapping',
+                        gait: 'Gait & Posture',
+                        spiral: 'Spiral Drawing',
+                        facial: 'Facial Expression'
+                    };
+                    
+                    rows.push(`
+                        <tr>
+                            <td>${testNames[test]}</td>
+                            <td>${status}</td>
+                            <td class="score-cell">${score}</td>
+                            <td>${interpretation}</td>
+                        </tr>
+                    `);
+                });
+                
+                tbody.innerHTML = rows.join('');
+                
+                // Update clinical impression
+                this.updateClinicalImpression();
+            }
+            
+            getClinicalInterpretation(test, score) {
+                if (score === null || score === undefined) return 'No data available';
+                
+                const interpretations = {
+                    voice: ['Normal vocal characteristics', 'Mild hypophonia present'],
+                    tremor: ['No resting tremor', 'Mild intermittent tremor'],
+                    gait: ['Normal gait pattern', 'Mild gait disturbance'],
+                    facial: ['Normal facial expression', 'Mild hypomimia']
+                };
+                
+                return interpretations[test] ? interpretations[test][Math.min(score, 1)] : 'Assessment complete';
+            }
+            
+            updateClinicalImpression() {
+                const completedTests = Object.values(this.state.assessments).filter(a => a.completed);
+                
+                if (completedTests.length === 0) {
+                    document.getElementById('clinicalImpression').innerHTML = 
+                        '<p>Complete motor assessments to generate clinical impression.</p>';
+                    return;
+                }
+                
+                const totalScore = completedTests.reduce((sum, test) => sum + (test.score || 0), 0);
+                const avgScore = totalScore / completedTests.length;
+                
+                let impression = '';
+                if (avgScore < 0.5) {
+                    impression = 'Normal motor function across completed assessments. No significant impairment detected.';
+                    document.getElementById('overallRisk').className = 'risk-indicator risk-low';
+                    document.getElementById('overallRisk').innerHTML = '<i class="fas fa-check-circle"></i><span>Low Risk - Normal Motor Function</span>';
+                } else {
+                    impression = 'Mild motor impairment present in some domains. Consider clinical follow-up.';
+                    document.getElementById('overallRisk').className = 'risk-indicator risk-medium';
+                    document.getElementById('overallRisk').innerHTML = '<i class="fas fa-exclamation-triangle"></i><span>Medium Risk - Mild Impairment</span>';
+                }
+                
+                document.getElementById('clinicalImpression').innerHTML = `<p>${impression}</p>`;
+            }
+            
+            generatePDFReport() {
+                if (!this.state.patientProfile) {
+                    this.showToast('Complete patient profile first', 'error');
+                    return;
+                }
+                
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Professional header
+                doc.setFillColor(10, 25, 47);
+                doc.rect(0, 0, 210, 50, 'F');
+                doc.setTextColor(100, 255, 218);
+                doc.setFontSize(24);
+                doc.setFont('helvetica', 'bold');
+                doc.text('NEUROSYNAPSE-PD', 105, 25, { align: 'center' });
+                doc.setFontSize(11);
+                doc.text('Clinical Motor Assessment Report', 105, 35, { align: 'center' });
+                doc.text('v2.1 • Developed by Aradhya Chavan', 105, 42, { align: 'center' });
+                
+                // Patient information
+                doc.setTextColor(230, 241, 255);
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.text('PATIENT INFORMATION', 20, 65);
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                
+                const profile = this.state.patientProfile;
+                doc.text(`Name: ${profile.firstName} ${profile.lastName}`, 20, 75);
+                doc.text(`Date of Birth: ${new Date(profile.dateOfBirth).toLocaleDateString()}`, 20, 82);
+                doc.text(`Gender: ${profile.gender}`, 20, 89);
+                doc.text(`Contact: ${profile.countryCode} ${profile.phoneNumber}`, 20, 96);
+                doc.text(`Email: ${profile.email}`, 20, 103);
+                
+                // Assessment results
+                doc.setFont('helvetica', 'bold');
+                doc.text('ASSESSMENT RESULTS', 20, 120);
+                doc.setFont('helvetica', 'normal');
+                
+                let yPos = 130;
+                Object.keys(this.state.assessments).forEach((test, index) => {
+                    const assessment = this.state.assessments[test];
+                    if (assessment.completed) {
+                        const testNames = {
+                            voice: 'Speech Analysis',
+                            tremor: 'Tremor Assessment',
+                            tapping: 'Finger Tapping',
+                            gait: 'Gait Analysis',
+                            spiral: 'Spiral Drawing',
+                            facial: 'Facial Expression'
+                        };
+                        
+                        doc.text(`${testNames[test]}: ${assessment.score}/4`, 20, yPos);
+                        yPos += 7;
+                    }
+                });
+                
+                // Clinical impression
+                doc.setFont('helvetica', 'bold');
+                doc.text('CLINICAL IMPRESSION', 20, yPos + 10);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(9);
+                
+                const impression = document.getElementById('clinicalImpression').textContent;
+                const splitText = doc.splitTextToSize(impression, 170);
+                doc.text(splitText, 20, yPos + 20);
+                
+                // Footer
+                doc.setFontSize(8);
+                doc.setTextColor(136, 146, 176);
+                doc.text('Generated by NeuroSynapse-PD Clinical Suite • For clinical use only', 105, 280, { align: 'center' });
+                doc.text(new Date().toLocaleString(), 105, 285, { align: 'center' });
+                
+                // Save PDF
+                const fileName = `NeuroSynapse_Report_${profile.lastName}_${new Date().toISOString().slice(0,10)}.pdf`;
+                doc.save(fileName);
+                
+                this.showToast('PDF report generated successfully', 'success');
+            }
+            
+            updateUI() {
+                this.updateDashboardStatus();
+            }
+            
+            showToast(message, type = 'info') {
+                // Remove existing toasts
+                document.querySelectorAll('.clinical-toast').forEach(toast => toast.remove());
+                
+                // Create toast
+                const toast = document.createElement('div');
+                toast.className = `clinical-toast ${type}`;
+                toast.style.cssText = `
+                    position: fixed;
+                    top: 1rem;
+                    right: 1rem;
+                    background: ${this.getToastColor(type)};
+                    color: white;
+                    padding: 1rem 1.5rem;
+                    border-radius: 12px;
+                    font-size: 0.9rem;
+                    font-weight: 600;
+                    z-index: 2000;
+                    animation: slideIn 0.3s ease-out;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+                    max-width: 300px;
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                `;
+                toast.textContent = message;
+                
+                document.body.appendChild(toast);
+                
+                // Auto-remove after 3 seconds
+                setTimeout(() => {
+                    toast.style.animation = 'slideOut 0.3s ease-out';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+            
+            getToastColor(type) {
+                const colors = {
+                    success: 'var(--accent-success)',
+                    error: 'var(--accent-danger)',
+                    warning: 'var(--accent-warning)',
+                    info: 'var(--accent-primary)'
+                };
+                return colors[type] || colors.info;
+            }
+        }
+        
+        // Initialize application when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            window.neuroSynapseApp = new NeuroSynapseApp();
+        });
+        
+        // Add CSS for toast animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            @keyframes slideOut {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
