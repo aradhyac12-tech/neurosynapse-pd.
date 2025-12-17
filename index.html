@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport"
+          content="width=device-width, maximum-scale=1.0, user-scalable=no" />
+    <title>NeuroSynapse‑PD | Clinical Assessment Suite v2.1</title>
+
+    <!-- Icons & Fonts -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.0/css/all.min.css" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+          rel="stylesheet" />
+
+    <!-- Chart.js for radar chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- MediaPipe (face mesh + pose) -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"
+            crossorigin="anonymous"></script>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <!-- Splash Screen -->
+    <div class="splash-screen" id="splashScreen">
+        <div class="splash-content">
+            <div class="splash-logo">🧠</div>
+            <h1 class="splash-title">NeuroSynapse‑PD</h1>
+            <p class="splash-subtitle">
+                Advanced Parkinson's Disease<br />
+                Clinical Assessment Suite v2.1
+            </p>
+            <div class="splash-developer">
+                <i class="fas fa-code"></i>
+                Created by Aradhya Chavan
+            </div>
+            <div class="splash-progress">
+                <div class="splash-progress-bar" id="splashProgress"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dangle Indicators -->
+    <div class="dangle-indicator" id="voiceDangle">
+        <div class="dangle-icon"><i class="fas fa-microphone"></i></div>
+        <div class="dangle-text" id="voiceDangleText">Voice: Ready</div>
+    </div>
+    <div class="dangle-indicator" id="tremorDangle">
+        <div class="dangle-icon"><i class="fas fa-hand-paper"></i></div>
+        <div class="dangle-text" id="tremorDangleText">Anti‑Tremor: Off</div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <button class="btn btn-outline" id="menuToggle" type="button">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="nav-title-group">
+                <div class="nav-title">NeuroSynapse‑PD</div>
+                <div class="nav-version">Clinical Suite v2.1</div>
+            </div>
+        </div>
+
+        <div class="nav-right">
+            <div class="language-selector" id="topLanguageSelector">
+                <span id="currentLanguageLabel">English</span>
+                <i class="fas fa-globe"></i>
+                <select id="topLanguageSelect"
+                        class="top-language-select"
+                        aria-label="Language">
+                    <option value="en">EN</option>
+                    <option value="hi">HI</option>
+                    <option value="ru">RU</option>
+                </select>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar" aria-label="Sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">
+                <i class="fas fa-brain"></i>
+                NeuroSynapse‑PD
+            </div>
+            <div class="sidebar-subtitle">Clinical Assessment Suite v2.1</div>
+            <div class="sidebar-credits">
+                <i class="fas fa-user-md"></i>
+                Created by Aradhya Chavan • Clinical Research Division
+            </div>
+            <button class="sidebar-back" id="sidebarBack"
+                    type="button" aria-label="Close sidebar">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+        </div>
+
+        <div class="sidebar-scroll">
+            <!-- Navigation -->
+            <div class="nav-section">
+                <div class="section-label">
+                    <i class="fas fa-brain"></i> Navigation
+                </div>
+                <div class="nav-item" data-view="dashboard">
+                    <i class="fas fa-chart-line nav-icon"></i>
+                    <span data-i18n="nav_dashboard">Clinical Dashboard</span>
+                    <div class="nav-badge">Home</div>
+                </div>
+                <div class="nav-item active" data-view="info">
+                    <i class="fas fa-info-circle nav-icon"></i>
+                    <span data-i18n="nav_info">PD Information</span>
+                    <div class="nav-badge">Guide</div>
+                </div>
+                <div class="nav-item" data-view="patient">
+                    <i class="fas fa-user-injured nav-icon"></i>
+                    <span data-i18n="nav_patient">Patient Profile</span>
+                    <div class="nav-badge">Required</div>
+                </div>
+            </div>
+
+            <!-- Motor Assessments (only needed items, minimal labels) -->
+            <div class="nav-section">
+                <div class="section-label">
+                    <i class="fas fa-stethoscope"></i> Screening
+                </div>
+                <div class="nav-item" data-view="voice" disabled>
+                    <i class="fas fa-microphone nav-icon"></i>
+                    <span data-i18n="nav_voice">Speech (3.1)</span>
+                </div>
+                <div class="nav-item" data-view="tremor" disabled>
+                    <i class="fas fa-wave-square nav-icon"></i>
+                    <span data-i18n="nav_tremor">Tremor (3.15‑18)</span>
+                </div>
+                <div class="nav-item" data-view="gait" disabled>
+                    <i class="fas fa-walking nav-icon"></i>
+                    <span data-i18n="nav_gait">Gait (3.10‑11)</span>
+                </div>
+                <div class="nav-item" data-view="facial" disabled>
+                    <i class="fas fa-smile nav-icon"></i>
+                    <span data-i18n="nav_facial">Facial (3.2)</span>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div class="nav-section">
+                <div class="section-label">
+                    <i class="fas fa-clipboard-check"></i> Results
+                </div>
+                <div class="nav-item" data-view="results" disabled>
+                    <i class="fas fa-chart-bar nav-icon"></i>
+                    <span data-i18n="nav_results">Screening Results</span>
+                </div>
+                <div class="nav-item" data-view="report" disabled>
+                    <i class="fas fa-file-download nav-icon"></i>
+                    <span data-i18n="nav_report">Download Summary</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="settings-item">
+                <div class="settings-label">
+                    <i class="fas fa-language"></i>
+                    <span data-i18n="label_language">Language</span>
+                </div>
+                <select class="form-control language-select"
+                        id="languageSelect" aria-label="Language">
+                    <option value="en">English</option>
+                    <option value="hi">हिन्दी</option>
+                    <option value="ru">Русский</option>
+                </select>
+            </div>
+
+            <div class="settings-item">
+                <div class="settings-label">
+                    <i class="fas fa-volume-up"></i>
+                    <span data-i18n="label_voice_assistant">Voice Prompt</span>
+                </div>
+                <div class="clinical-toggle active"
+                     id="voiceToggle" role="switch"
+                     aria-checked="true"></div>
+            </div>
+
+            <div class="settings-item">
+                <div class="settings-label">
+                    <i class="fas fa-handshake"></i>
+                    <span data-i18n="label_tremor_ui">Anti‑Tremor UI</span>
+                </div>
+                <div class="clinical-toggle"
+                     id="tremorToggle" role="switch"
+                     aria-checked="false"></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <!-- Dashboard -->
+        <section class="view" id="dashboardView">
+            <div class="clinical-card">
+                <header class="test-header">
+                    <h2 data-i18n="dash_title">Clinical Assessment Dashboard</h2>
+                    <p data-i18n="dash_subtitle">
+                        MDS‑UPDRS Part III ‑ digital screening summary
+                    </p>
+                </header>
+
+                <div class="card-content">
+                    <div class="dashboard-grid">
+                        <div class="info-point">
+                            <div class="point-icon">👤</div>
+                            <h3 data-i18n="dash_patient_title">Patient Profile</h3>
+                            <p data-i18n="dash_patient_desc">
+                                Complete demographic and contact details.
+                            </p>
+                            <div class="status-badge status-pending"
+                                 id="patientStatus"
+                                 data-i18n="dash_status_required">
+                                Required
+                            </div>
+                        </div>
+
+                        <div class="info-point">
+                            <div class="point-icon">🧪</div>
+                            <h3 data-i18n="dash_screening_title">Screening Tests</h3>
+                            <p data-i18n="dash_screening_desc">
+                                Speech, tremor, gait and facial expression.
+                            </p>
+                            <div class="status-badge status-pending"
+                                 id="screeningStatus">
+                                0/4
+                            </div>
+                        </div>
+
+                        <div class="info-point">
+                            <div class="point-icon">📊</div>
+                            <h3 data-i18n="dash_report_title">Radar Summary</h3>
+                            <p data-i18n="dash_report_desc">
+                                Downloadable radar chart with domain scores.
+                            </p>
+                            <div class="status-badge status-pending"
+                                 id="reportStatus"
+                                 data-i18n="dash_status_locked">
+                                Locked
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-section dashboard-actions">
+                        <div class="settings-item dash-lang">
+                            <div class="settings-label">
+                                <i class="fas fa-globe"></i>
+                                <span data-i18n="label_language">Language</span>
+                            </div>
+                            <select class="form-control"
+                                    id="dashboardLanguageSelect"
+                                    aria-label="Language">
+                                <option value="en">English</option>
+                                <option value="hi">हिन्दी</option>
+                                <option value="ru">Русский</option>
+                            </select>
+                        </div>
+
+                        <button class="btn btn-primary btn-block"
+                                type="button" data-view="info">
+                            <i class="fas fa-play-circle"></i>
+                            <span data-i18n="dash_start">
+                                Begin Assessment Journey
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PD Information -->
+        <section class="view active" id="infoView">
+            <div class="clinical-card">
+                <div class="info-hero">
+                    <div class="info-icon">🧠</div>
+                    <h2 data-i18n="info_title">Parkinson's Disease Information</h2>
+                    <p data-i18n="info_subtitle">
+                        Clinical background and MDS‑UPDRS Part III protocol
+                    </p>
+                </div>
+
+                <div class="card-content">
+                    <div class="info-points">
+                        <div class="info-point">
+                            <div class="point-icon">⚡</div>
+                            <h3 data-i18n="info_pd_title">What is Parkinson's?</h3>
+                            <p data-i18n="info_pd_text">
+                                Progressive neurodegenerative disorder with dopaminergic
+                                neuron loss in the substantia nigra, producing tremor,
+                                bradykinesia, rigidity and postural instability.
+                            </p>
+                        </div>
+
+                        <div class="info-point">
+                            <div class="point-icon">📋</div>
+                            <h3 data-i18n="info_updrs_title">MDS‑UPDRS Part III</h3>
+                            <p data-i18n="info_updrs_text">
+                                Motor examination with 18 items scored 0–4 (0 normal,
+                                4 severe). This prototype uses digital tasks to
+                                approximate these domains.
+                            </p>
+                        </div>
+
+                        <div class="info-point">
+                            <div class="point-icon">📡</div>
+                            <h3 data-i18n="info_biomarker_title">Digital Biomarkers</h3>
+                            <p data-i18n="info_biomarker_text">
+                                Speech, tremor, gait and facial metrics captured as
+                                objective digital signatures of Parkinsonian motor change.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="test-instruction">
+                        <div class="instruction-text" data-i18n="info_note">
+                            💡 <strong>Clinical Note:</strong> This is a research
+                            prototype; findings must be interpreted by a neurologist
+                            or movement‑disorder specialist.
+                        </div>
+                        <div class="instruction-subtext">
+                            NeuroSynapse‑PD • Created by Aradhya Chavan
+                        </div>
+                    </div>
+
+                    <div class="action-section">
+                        <button class="btn btn-primary btn-block"
+                                type="button" data-view="patient"
+                                id="goToPatientBtn">
+                            <i class="fas fa-arrow-right"></i>
+                            <span data-i18n="info_next">
+                                Proceed to Patient Contact Information
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Patient Contact Info -->
+        <section class="view" id="patientView">
+            <div class="clinical-card">
+                <header class="test-header">
+                    <h2 data-i18n="patient_title">
+                        Patient Demographic & Contact Information
+                    </h2>
+                    <p data-i18n="patient_subtitle">
+                        Required for documentation before screening
+                    </p>
+                </header>
+
+                <div class="card-content">
+                    <form id="patientForm" novalidate>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="firstName">
+                                    <i class="fas fa-user"></i>
+                                    <span data-i18n="label_firstname">First Name *</span>
+                                </label>
+                                <input type="text" class="form-control"
+                                       id="firstName" required />
+                                <div class="error-message"
+                                     id="firstNameError"></div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="lastName">
+                                    <i class="fas fa-user"></i>
+                                    <span data-i18n="label_lastname">Last Name *</span>
+                                </label>
+                                <input type="text" class="form-control"
+                                       id="lastName" required />
+                                <div class="error-message"
+                                     id="lastNameError"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="dateOfBirth">
+                                    <i class="fas fa-birthday-cake"></i>
+                                    <span data-i18n="label_dob">Date of Birth *</span>
+                                </label>
+                                <input type="date" class="form-control"
+                                       id="dateOfBirth" required />
+                                <div class="error-message"
+                                     id="dobError"></div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="gender">
+                                    <i class="fas fa-venus-mars"></i>
+                                    <span data-i18n="label_gender">Gender *</span>
+                                </label>
+                                <select class="form-control"
+                                        id="gender" required>
+                                    <option value=""
+                                            data-i18n="gender_select">
+                                        Select Gender
+                                    </option>
+                                    <option value="male"
+                                            data-i18n="gender_male">
+                                        Male
+                                    </option>
+                                    <option value="female"
+                                            data-i18n="gender_female">
+                                        Female
+                                    </option>
+                                    <option value="other"
+                                            data-i18n="gender_other">
+                                        Other
+                                    </option>
+                                    <option value="prefer-not-to-say"
+                                            data-i18n="gender_na">
+                                        Prefer not to say
+                                    </option>
+                                </select>
+                                <div class="error-message"
+                                     id="genderError"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="countryCode">
+                                    <i class="fas fa-globe"></i>
+                                    <span data-i18n="label_country">
+                                        Country Code *
+                                    </span>
+                                </label>
+                                <select class="form-control"
+                                        id="countryCode" required>
+                                    <option value="">Select Country</option>
+                                    <option value="+1">United States (+1)</option>
+                                    <option value="+44">United Kingdom (+44)</option>
+                                    <option value="+91">India (+91)</option>
+                                    <option value="+7">Russia (+7)</option>
+                                    <option value="+996">Kyrgyzstan (+996)</option>
+                                </select>
+                                <div class="error-message"
+                                     id="countryError"></div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="phoneNumber">
+                                    <i class="fas fa-phone"></i>
+                                    <span data-i18n="label_phone">
+                                        Phone Number *
+                                    </span>
+                                </label>
+                                <input type="tel" class="form-control"
+                                       id="phoneNumber"
+                                       placeholder="Digits only"
+                                       required />
+                                <div class="form-hint"
+                                     data-i18n="hint_phone">
+                                    Enter digits only, without country code
+                                </div>
+                                <div class="error-message"
+                                     id="phoneError"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="email">
+                                <i class="fas fa-envelope"></i>
+                                <span data-i18n="label_email">
+                                    Email Address *
+                                </span>
+                            </label>
+                            <input type="email" class="form-control"
+                                   id="email"
+                                   placeholder="patient@example.com"
+                                   required />
+                            <div class="error-message"
+                                 id="emailError"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="medicalId">
+                                <i class="fas fa-file-medical"></i>
+                                <span data-i18n="label_medicalid">
+                                    Medical Record Number
+                                </span>
+                            </label>
+                            <input type="text" class="form-control"
+                                   id="medicalId"
+                                   placeholder="Optional - Hospital/Clinic ID" />
+                        </div>
+
+                        <div class="test-instruction">
+                            <div class="instruction-text"
+                                 data-i18n="patient_note">
+                                📋 <strong>Clinical Documentation:</strong>
+                                All required fields must be valid before
+                                screening tests unlock.
+                            </div>
+                        </div>
+
+                        <div class="action-section">
+                            <button type="submit"
+                                    class="btn btn-primary btn-block"
+                                    id="savePatientBtn">
+                                <i class="fas fa-save"></i>
+                                <span data-i18n="patient_save">
+                                    Save & Unlock Screening
+                                </span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- VOICE SCREENING (3 trials, minimal UI) -->
+        <section class="view" id="voiceView">
+            <div class="clinical-card">
+                <header class="test-header">
+                    <h2>Speech Screening (UPDRS 3.1)</h2>
+                    <p>
+                        Read the sentence clearly in a normal speaking voice.
+                        Voice guide will tell you what to do.
+                    </p>
+                </header>
+
+                <div class="card-content">
+                    <!-- 3‑second pre‑timer -->
+                    <div class="precount-wrapper">
+                        <div class="precount-label">
+                            <span>⏳</span> Starting in
+                        </div>
+                        <div class="precount-timer"
+                             id="voicePreTimer">3</div>
+                    </div>
+
+                    <!-- Animated sentence band -->
+                    <div class="voice-hero">
+                        <div class="voice-wave"></div>
+                        <div class="voice-sentence">
+                            🗣️
+                            <span id="voiceSentence">
+                                “Today is a good day to assess my speech and
+                                voice clarity.”
+                            </span>
+                            🧠
+                        </div>
+                        <div class="voice-wave voice-wave-bottom"></div>
+                    </div>
+
+                    <!-- Big main timer -->
+                    <div class="timer-large"
+                         id="voiceMainTimer">00:08</div>
+
+                    <!-- Trial controls -->
+                    <div class="voice-trials">
+                        <div class="trial-card">
+                            <div class="trial-header">
+                                <span>Trial 1</span>
+                                <span id="voiceTrial1Status"
+                                      class="trial-status">
+                                    Pending
+                                </span>
+                            </div>
+                            <div class="trial-actions">
+                                <button type="button"
+                                        class="btn btn-primary btn-block"
+                                        id="voiceTrial1Btn">
+                                    <i class="fas fa-microphone"></i>
+                                    Record
+                                </button>
+                                <button type="button"
+                                        class="btn btn-outline btn-block"
+                                        id="voiceTrial1Play"
+                                        disabled>
+                                    <i class="fas fa-play"></i>
+                                    Play
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="trial-card">
+                            <div class="trial-header">
+                                <span>Trial 2</span>
+                                <span id="voiceTrial2Status"
+                                      class="trial-status">
+                                    Pending
+                                </span>
+                            </div>
+                            <div class="trial-actions">
+                                <button type="button"
+                                        class="btn btn-primary btn-block"
+                                        id="voiceTrial2Btn">
+                                    <i class="fas fa-microphone"></i>
+                                    Record
+                                </button>
+                                <button type="button"
+                                        class="btn btn-outline btn-block"
+                                        id="voiceTrial2Play"
+                                        disabled>
+                                    <i class="fas fa-play"></i>
+                                    Play
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="trial-card">
+                            <div class="trial-header">
+                                <span>Trial 3</span>
+                                <span id="voiceTrial3Status"
+                                      class="trial-status">
+                                    Pending
+                                </span>
+                            </div>
+                            <div class="trial-actions">
+                                <button type="button"
+                                        class="btn btn-primary btn-block"
+                                        id="voiceTrial3Btn">
+                                    <i class="fas fa-microphone"></i>
+                                    Record
+                                </button>
+                                <button type="button"
+                                        class="btn btn-outline btn-block"
+                                        id="voiceTrial3Play"
+                                        disabled>
+                                    <i class="fas fa-play"></i>
+                                    Play
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Voice metrics compact -->
+                    <div class="metrics-grid compact">
+                        <div class="metric-card">
+                            <div class="metric-label">Avg Jitter (%)</div>
+                            <div class="metric-value"
+                                 id="jitterValue">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Avg Shimmer (dB)</div>
+                            <div class="metric-value"
+                                 id="shimmerValue">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Avg HNR (dB)</div>
+                            <div class="metric-value"
+                                 id="hnrValue">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Median Pitch (Hz)</div>
+                            <div class="metric-value"
+                                 id="pitchValue">--</div>
+                        </div>
+                    </div>
+
+                    <div class="action-section">
+                        <button class="btn btn-outline btn-block"
+                                type="button"
+                                id="saveVoiceResults" disabled>
+                            <i class="fas fa-save"></i>
+                            Save Voice Screening
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TREMOR (minimal) -->
+        <section class="view" id="tremorView">
+            <div class="clinical-card">
+                <header class="test-header">
+                    <h2>Tremor Screening (UPDRS 3.15‑18)</h2>
+                    <p>
+                        Hold the phone gently on the selected hand, resting on
+                        a stable surface. Voice will guide you.
+                    </p>
+                </header>
+
+                <div class="card-content">
+                    <div class="precount-wrapper">
+                        <div class="precount-label">
+                            <span>⏳</span> Starting in
+                        </div>
+                        <div class="precount-timer"
+                             id="tremorPreTimer">3</div>
+                    </div>
+
+                    <div class="timer-large"
+                         id="tremorMainTimer">00:20</div>
+
+                    <div class="hand-select">
+                        <button type="button"
+                                class="btn btn-small active"
+                                id="rightHandBtn">
+                            👉 Right Hand
+                        </button>
+                        <button type="button"
+                                class="btn btn-small"
+                                id="leftHandBtn">
+                            ✋ Left Hand
+                        </button>
+                    </div>
+
+                    <div class="action-section">
+                        <button class="btn btn-primary btn-block"
+                                type="button"
+                                id="startTremorTest">
+                            <i class="fas fa-wave-square"></i>
+                            Start Tremor Capture
+                        </button>
+                    </div>
+
+                    <div class="metrics-grid compact">
+                        <div class="metric-card">
+                            <div class="metric-label">Frequency (Hz)</div>
+                            <div class="metric-value"
+                                 id="frequencyValue">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Amplitude (mm)</div>
+                            <div class="metric-value"
+                                 id="amplitudeValue">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Consistency (%)</div>
+                            <div class="metric-value"
+                                 id="consistencyValue">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Tremor Score</div>
+                            <div class="metric-value"
+                                 id="severityScore">--</div>
+                        </div>
+                    </div>
+
+                    <div class="action-section">
+                        <button class="btn btn-outline btn-block"
+                                type="button"
+                                id="saveTremorResults" disabled>
+                            <i class="fas fa-save"></i>
+                            Save Tremor Screening
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- GAIT (pose skeleton) -->
+        <section class="view" id="gaitView">
+            <div class="clinical-card">
+                <header class="test-header">
+                    <h2>Gait Screening (UPDRS 3.10‑11)</h2>
+                    <p>
+                        Walk naturally in front of the camera; pose skeleton
+                        will be drawn on screen.
+                    </p>
+                </header>
+
+                <div class="card-content">
+                    <div class="precount-wrapper">
+                        <div class="precount-label">
+                            <span>⏳</span> Starting in
+                        </div>
+                        <div class="precount-timer"
+                             id="gaitPreTimer">3</div>
+                    </div>
+
+                    <div class="video-container" id="gaitViz">
+                        <video id="gaitVideo" class="clinical-video"
+                               playsinline></video>
+                        <canvas id="gaitCanvas"
+                                class="clinical-canvas"></canvas>
+                    </div>
+
+                    <div class="timer-large" id="gaitMainTimer">00:15</div>
+
+                    <div class="action-section gait-actions">
+                        <button class="btn btn-primary"
+                                type="button"
+                                id="startGaitTest">
+                            <i class="fas fa-walking"></i>
+                            Start Gait Capture
+                        </button>
+                        <button class="btn btn-outline"
+                                type="button"
+                                id="flipGaitCamera">
+                            <i class="fas fa-sync-alt"></i>
+                            Flip Camera
+                        </button>
+                        <button class="btn btn-outline"
+                                type="button"
+                                id="gaitFullscreen">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+
+                    <div class="metrics-grid compact">
+                        <div class="metric-card">
+                            <div class="metric-label">Step Length (cm)</div>
+                            <div class="metric-value"
+                                 id="stepLength">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Cadence (steps/min)</div>
+                            <div class="metric-value"
+                                 id="stepCadence">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Balance Score</div>
+                            <div class="metric-value"
+                                 id="balanceScore">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Posture Score</div>
+                            <div class="metric-value"
+                                 id="postureScore">--</div>
+                        </div>
+                    </div>
+
+                    <div class="action-section">
+                        <button class="btn btn-outline btn-block"
+                                type="button"
+                                id="saveGaitResults" disabled>
+                            <i class="fas fa-save"></i>
+                            Save Gait Screening
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FACIAL (face mesh) -->
+        <section class="view" id="facialView">
+            <div class="clinical-card">
+                <header class="test-header">
+                    <h2>Facial Screening (UPDRS 3.2)</h2>
+                    <p>
+                        Look at the camera with a neutral expression. Face
+                        mesh will highlight facial landmarks.
+                    </p>
+                </header>
+
+                <div class="card-content">
+                    <div class="precount-wrapper">
+                        <div class="precount-label">
+                            <span>⏳</span> Starting in
+                        </div>
+                        <div class="precount-timer"
+                             id="facePreTimer">3</div>
+                    </div>
+
+                    <div class="video-container" id="faceViz">
+                        <video id="faceVideo" class="clinical-video"
+                               playsinline></video>
+                        <canvas id="faceCanvas"
+                                class="clinical-canvas"></canvas>
+                    </div>
+
+                    <div class="timer-large" id="faceMainTimer">00:10</div>
+
+                    <div class="action-section face-actions">
+                        <button class="btn btn-primary"
+                                type="button"
+                                id="startFaceTest">
+                            <i class="fas fa-smile"></i>
+                            Start Facial Capture
+                        </button>
+                        <button class="btn btn-outline"
+                                type="button"
+                                id="flipFaceCamera">
+                            <i class="fas fa-sync-alt"></i>
+                            Flip Camera
+                        </button>
+                        <button class="btn btn-outline"
+                                type="button"
+                                id="faceFullscreen">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+
+                    <div class="metrics-grid compact">
+                        <div class="metric-card">
+                            <div class="metric-label">Symmetry Score</div>
+                            <div class="metric-value"
+                                 id="symmetryScore">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Blink Rate (/min)</div>
+                            <div class="metric-value"
+                                 id="blinkRate">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Expression Score</div>
+                            <div class="metric-value"
+                                 id="expressionScore">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Movement Score</div>
+                            <div class="metric-value"
+                                 id="movementScore">--</div>
+                        </div>
+                    </div>
+
+                    <div class="action-section">
+                        <button class="btn btn-outline btn-block"
+                                type="button"
+                                id="saveFaceResults" disabled>
+                            <i class="fas fa-save"></i>
+                            Save Facial Screening
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- RESULTS + RADAR CHART + DOWNLOAD -->
+        <section class="view" id="resultsView">
+            <div class="clinical-card">
+                <header class="test-header">
+                    <h2 data-i18n="nav_results">Screening Results</h2>
+                    <p>Radar summary of domain scores (0–4; higher = worse).</p>
+                </header>
+
+                <div class="card-content">
+                    <div class="results-layout">
+                        <!-- Radar chart card -->
+                        <div class="radar-card" id="radarCard">
+                            <div class="radar-header">
+                                <div class="radar-title">
+                                    🕸️ Digital Motor Radar
+                                </div>
+                                <div class="radar-subtitle">
+                                    Speech · Tremor · Gait · Facial
+                                </div>
+                            </div>
+                            <div class="radar-canvas-wrap">
+                                <canvas id="radarChartCanvas"></canvas>
+                            </div>
+                            <div class="radar-actions">
+                                <button class="btn btn-outline"
+                                        type="button"
+                                        id="downloadRadarPng">
+                                    <i class="fas fa-image"></i>
+                                    Download PNG
+                                </button>
+                                <button class="btn btn-outline"
+                                        type="button"
+                                        id="downloadRadarPdf">
+                                    <i class="fas fa-file-pdf"></i>
+                                    Download PDF
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tabular/summary card -->
+                        <div class="summary-card">
+                            <h3>Domain Scores</h3>
+                            <div class="results-table-wrapper">
+                                <table class="results-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Domain</th>
+                                            <th>Status</th>
+                                            <th>Score</th>
+                                            <th>Comment</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="resultsTableBody"></tbody>
+                                </table>
+                            </div>
+
+                            <div class="clinical-impression-section">
+                                <h3>Overall Impression</h3>
+                                <div id="overallRisk"
+                                     class="risk-indicator risk-low">
+                                    <i class="fas fa-info-circle"></i>
+                                    <span>Incomplete ‑ more tests needed</span>
+                                </div>
+                                <div id="clinicalImpression">
+                                    <p>
+                                        Complete all four screening tests to
+                                        generate an aggregated impression.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="action-section">
+                                <button class="btn btn-primary btn-block"
+                                        type="button"
+                                        data-view="report"
+                                        id="goToReportBtn" disabled>
+                                    <i class="fas fa-file-medical-alt"></i>
+                                    View / Download Summary
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FINAL REPORT DOWNLOAD VIEW -->
+        <section class="view" id="reportView">
+            <div class="clinical-card">
+                <header class="test-header">
+                    <h2 data-i18n="nav_report">Download Summary</h2>
+                    <p>
+                        Export radar chart and screening details as PDF
+                        (prototype only, for demo).
+                    </p>
+                </header>
+
+                <div class="card-content">
+                    <h3>Patient Snapshot</h3>
+                    <div id="reportPatientInfo">
+                        <p>No patient information available.</p>
+                    </div>
+
+                    <h3>Summary of Screening</h3>
+                    <div id="reportSummary">
+                        <p>
+                            Complete assessments and generate report to view
+                            summary.
+                        </p>
+                    </div>
+
+                    <div class="action-section">
+                        <button class="btn btn-primary btn-block"
+                                type="button"
+                                id="generateReport">
+                            <i class="fas fa-file-pdf"></i>
+                            Generate & Download PDF
+                        </button>
+                    </div>
+
+                    <div class="test-instruction">
+                        <div class="instruction-text">
+                            💡 <strong>Clinical Note:</strong> This report is
+                            auto‑generated from prototype signals and must be
+                            reviewed by a clinician.
+                        </div>
+                        <div class="instruction-subtext">
+                            NeuroSynapse‑PD • Created by Aradhya Chavan
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Global language dictionary & minimal boot (logic in assessment.js) -->
+    <script>
+        window.NS_I18N = {
+            en: {
+                nav_dashboard: "Clinical Dashboard",
+                nav_info: "PD Information",
+                nav_patient: "Patient Profile",
+                nav_voice: "Speech (3.1)",
+                nav_tremor: "Tremor (3.15‑18)",
+                nav_gait: "Gait (3.10‑11)",
+                nav_facial: "Facial (3.2)",
+                nav_results: "Screening Results",
+                nav_report: "Download Summary",
+
+                dash_title: "Clinical Assessment Dashboard",
+                dash_subtitle: "MDS‑UPDRS Part III digital screening",
+                dash_patient_title: "Patient Profile",
+                dash_patient_desc: "Complete demographic and contact details.",
+                dash_screening_title: "Screening Tests",
+                dash_screening_desc: "Speech, tremor, gait and facial expression.",
+                dash_report_title: "Radar Summary",
+                dash_report_desc: "Downloadable radar chart with domain scores.",
+                dash_status_required: "Required",
+                dash_status_locked: "Locked",
+                dash_start: "Begin Assessment Journey",
+
+                info_title: "Parkinson's Disease Information",
+                info_subtitle: "Clinical background and MDS‑UPDRS Part III protocol",
+                info_pd_title: "What is Parkinson's?",
+                info_pd_text:
+                    "Progressive neurodegenerative disorder with dopaminergic neuron loss in the substantia nigra, producing tremor, bradykinesia, rigidity and postural instability.",
+                info_updrs_title: "MDS‑UPDRS Part III",
+                info_updrs_text:
+                    "Motor examination with 18 items scored 0–4 (0 normal, 4 severe). This prototype uses digital tasks to approximate these domains.",
+                info_biomarker_title: "Digital Biomarkers",
+                info_biomarker_text:
+                    "Speech, tremor, gait and facial metrics captured as objective digital signatures of Parkinsonian motor change.",
+                info_note:
+                    "💡 <strong>Clinical Note:</strong> This is a research prototype; findings must be interpreted by a neurologist or movement‑disorder specialist.",
+                info_next: "Proceed to Patient Contact Information",
+
+                patient_title: "Patient Demographic & Contact Information",
+                patient_subtitle: "Required for documentation before screening",
+                label_firstname: "First Name *",
+                label_lastname: "Last Name *",
+                label_dob: "Date of Birth *",
+                label_gender: "Gender *",
+                gender_select: "Select Gender",
+                gender_male: "Male",
+                gender_female: "Female",
+                gender_other: "Other",
+                gender_na: "Prefer not to say",
+                label_country: "Country Code *",
+                label_phone: "Phone Number *",
+                hint_phone: "Enter digits only, without country code",
+                label_email: "Email Address *",
+                label_medicalid: "Medical Record Number",
+                patient_note:
+                    "📋 <strong>Clinical Documentation:</strong> All required fields must be valid before screening tests unlock.",
+                patient_save: "Save & Unlock Screening",
+
+                label_language: "Language",
+                label_voice_assistant: "Voice Prompt",
+                label_tremor_ui: "Anti‑Tremor UI",
+
+                fillCorrect: "Please fill the information correctly.",
+                saved: "Patient information saved. Screening tests unlocked.",
+                proceedVoice: "Proceeding to speech screening.",
+                voiceOff: "Voice: Off",
+                voiceOn: "Voice: Ready",
+                tremorOn: "Anti‑Tremor: On",
+                tremorOff: "Anti‑Tremor: Off"
+            },
+
+            hi: {
+                nav_dashboard: "क्लिनिकल डैशबोर्ड",
+                nav_info: "PD जानकारी",
+                nav_patient: "मरीज़ प्रोफ़ाइल",
+                nav_voice: "स्पीच (3.1)",
+                nav_tremor: "कंपन (3.15‑18)",
+                nav_gait: "गैट (3.10‑11)",
+                nav_facial: "चेहरा (3.2)",
+                nav_results: "स्क्रीनिंग परिणाम",
+                nav_report: "डाउनलोड सारांश",
+
+                dash_title: "क्लिनिकल असेसमेंट डैशबोर्ड",
+                dash_subtitle: "MDS‑UPDRS भाग III डिजिटल स्क्रीनिंग",
+                dash_patient_title: "मरीज़ प्रोफ़ाइल",
+                dash_patient_desc: "डेमोग्राफिक और संपर्क विवरण भरें।",
+                dash_screening_title: "स्क्रीनिंग टेस्ट",
+                dash_screening_desc: "स्पीच, कंपन, गैट और चेहरे की अभिव्यक्ति।",
+                dash_report_title: "राडार सारांश",
+                dash_report_desc: "डोमेन स्कोर के साथ डाउनलोडेबल राडार चार्ट।",
+                dash_status_required: "आवश्यक",
+                dash_status_locked: "लॉक्ड",
+                dash_start: "असेसमेंट शुरू करें",
+
+                info_title: "पार्किन्सन रोग जानकारी",
+                info_subtitle: "क्लिनिकल पृष्ठभूमि और MDS‑UPDRS भाग III प्रोटोकॉल",
+                info_pd_title: "पार्किन्सन क्या है?",
+                info_pd_text:
+                    "यह एक प्रगतिशील न्यूरोडीजेनेरेटिव विकार है जिसमें substantia nigra में डोपामिनर्जिक न्यूरॉन्स की हानि होती है, जिससे कंपन, ब्रैडीकाइनीज़िया, कठोरता और पोस्टुरल अस्थिरता होती है।",
+                info_updrs_title: "MDS‑UPDRS भाग III",
+                info_updrs_text:
+                    "18 आइटम वाला मोटर परीक्षण (0–4 स्कोर; 0 सामान्य, 4 गंभीर)। यह प्रोटोटाइप इन डोमेन को डिजिटल टास्क से अनुमानित करता है।",
+                info_biomarker_title: "डिजिटल बायोमार्कर",
+                info_biomarker_text:
+                    "स्पीच, कंपन, गैट और चेहरे की मेट्रिक्स को ऑब्जेक्टिव संकेत के रूप में रिकॉर्ड किया जाता है।",
+                info_note:
+                    "💡 <strong>क्लिनिकल नोट:</strong> यह रिसर्च प्रोटोटाइप है; निष्कर्षों की व्याख्या विशेषज्ञ द्वारा की जानी चाहिए।",
+                info_next: "मरीज़ संपर्क जानकारी पर जाएँ",
+
+                patient_title: "मरीज़ डेमोग्राफिक और संपर्क जानकारी",
+                patient_subtitle: "स्क्रीनिंग से पहले दस्तावेज़ के लिए आवश्यक",
+                label_firstname: "पहला नाम *",
+                label_lastname: "अंतिम नाम *",
+                label_dob: "जन्म तिथि *",
+                label_gender: "लिंग *",
+                gender_select: "लिंग चुनें",
+                gender_male: "पुरुष",
+                gender_female: "महिला",
+                gender_other: "अन्य",
+                gender_na: "न बताना चाहें",
+                label_country: "कंट्री कोड *",
+                label_phone: "फोन नंबर *",
+                hint_phone: "केवल अंक, कंट्री कोड के बिना",
+                label_email: "ईमेल पता *",
+                label_medicalid: "मेडिकल रिकॉर्ड नंबर",
+                patient_note:
+                    "📋 <strong>क्लिनिकल डॉक्युमेंटेशन:</strong> स्क्रीनिंग अनलॉक होने से पहले सभी आवश्यक फ़ील्ड सही होना ज़रूरी है।",
+                patient_save: "सेव करें और स्क्रीनिंग अनलॉक करें",
+
+                label_language: "भाषा",
+                label_voice_assistant: "वॉइस प्रॉम्प्ट",
+                label_tremor_ui: "एंटी‑ट्रेमर UI",
+
+                fillCorrect: "कृपया जानकारी सही तरीके से भरें।",
+                saved: "मरीज़ की जानकारी सेव हो गई है; स्क्रीनिंग अनलॉक हो गई।",
+                proceedVoice: "स्पीच स्क्रीनिंग पर जा रहे हैं।",
+                voiceOff: "वॉइस: बंद",
+                voiceOn: "वॉइस: तैयार",
+                tremorOn: "एंटी‑ट्रेमर: चालू",
+                tremorOff: "एंटी‑ट्रेमर: बंद"
+            },
+
+            ru: {
+                nav_dashboard: "Клиническая панель",
+                nav_info: "Информация о БП",
+                nav_patient: "Профиль пациента",
+                nav_voice: "Речь (3.1)",
+                nav_tremor: "Тремор (3.15‑18)",
+                nav_gait: "Походка (3.10‑11)",
+                nav_facial: "Мимика (3.2)",
+                nav_results: "Результаты скрининга",
+                nav_report: "Скачать сводку",
+
+                dash_title: "Панель клинической оценки",
+                dash_subtitle: "MDS‑UPDRS часть III ‑ цифровой скрининг",
+                dash_patient_title: "Профиль пациента",
+                dash_patient_desc: "Заполните демографические данные и контакты.",
+                dash_screening_title: "Скрининговые тесты",
+                dash_screening_desc: "Речь, тремор, походка и мимика.",
+                dash_report_title: "Радар‑сводка",
+                dash_report_desc: "Радар‑диаграмма с баллами по доменам.",
+                dash_status_required: "Обязательно",
+                dash_status_locked: "Заблокировано",
+                dash_start: "Начать обследование",
+
+                info_title: "Информация о болезни Паркинсона",
+                info_subtitle: "Клинический фон и протокол MDS‑UPDRS часть III",
+                info_pd_title: "Что такое Паркинсон?",
+                info_pd_text:
+                    "Прогрессирующее нейродегенеративное заболевание с потерей дофаминергических нейронов в черной субстанции, вызывающее тремор, брадикинезию, ригидность и постуральную неустойчивость.",
+                info_updrs_title: "MDS‑UPDRS часть III",
+                info_updrs_text:
+                    "Моторное обследование из 18 пунктов, оцениваемых от 0 до 4 (0 ‑ норма, 4 ‑ выражено). Прототип использует цифровые задания для оценки этих доменов.",
+                info_biomarker_title: "Цифровые биомаркеры",
+                info_biomarker_text:
+                    "Речь, тремор, походка и мимика фиксируются как объективные цифровые показатели моторных изменений.",
+                info_note:
+                    "💡 <strong>Клиническая заметка:</strong> Это исследовательский прототип; результаты должны интерпретироваться неврологом / специалистом по двигательным расстройствам.",
+                info_next: "Перейти к контактным данным пациента",
+
+                patient_title: "Демографические и контактные данные пациента",
+                patient_subtitle: "Необходимо до начала скрининга",
+                label_firstname: "Имя *",
+                label_lastname: "Фамилия *",
+                label_dob: "Дата рождения *",
+                label_gender: "Пол *",
+                gender_select: "Выберите пол",
+                gender_male: "Мужской",
+                gender_female: "Женский",
+                gender_other: "Другой",
+                gender_na: "Предпочитаю не указывать",
+                label_country: "Код страны *",
+                label_phone: "Телефон *",
+                hint_phone: "Только цифры, без кода страны",
+                label_email: "Электронная почта *",
+                label_medicalid: "Номер мед. карты",
+                patient_note:
+                    "📋 <strong>Клиническая документация:</strong> Все обязательные поля должны быть заполнены корректно до разблокировки тестов.",
+                patient_save: "Сохранить и разблокировать скрининг",
+
+                label_language: "Язык",
+                label_voice_assistant: "Голосовой помощник",
+                label_tremor_ui: "Anti‑tremor UI",
+
+                fillCorrect: "Пожалуйста, заполните информацию корректно.",
+                saved: "Данные пациента сохранены; тесты разблокированы.",
+                proceedVoice: "Переход к скринингу речи.",
+                voiceOff: "Голос: выкл.",
+                voiceOn: "Голос: готов",
+                tremorOn: "Anti‑tremor: вкл.",
+                tremorOff: "Anti‑tremor: выкл."
+            }
+        };
+
+        // simple bootstrap object for assessment.js
+        window.NS_APP_BOOT = {
+            defaultLang: "en"
+        };
+    </script>
+
+    <!-- Full app logic (screening, radar, camera, voice) -->
+    <script src="assessment.js"></script>
+</body>
+</html>
