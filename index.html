@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f0f23">
+    <title>NeuroCompass-PD | Clinical Assessment</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%230ea5e9'/><path d='M50 30v40M30 50h40' stroke='white' stroke-width='4'/></svg>">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+</head>
+<body>
+
+<!-- SPLASH SCREEN -->
+<div class="splash-screen" id="splashScreen">
+    <div class="splash-logo">🧠</div>
+    <h1 class="splash-title">NeuroCompass-PD</h1>
+    <p class="splash-subtitle">Clinical Assessment Suite</p>
+    <div class="splash-progress-container">
+        <div class="splash-progress">
+            <div class="splash-progress-bar" id="splashProgress"></div>
+        </div>
+    </div>
+</div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <div class="nav-brand">
+        <div style="font-size: 1.8rem; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; background: rgba(14, 165, 233, 0.2); border-radius: 12px; color: #0ea5e9;">🧠</div>
+        <div class="nav-title-group">
+            <div class="nav-title">NeuroCompass-PD</div>
+            <div class="nav-version">v3.0 Clinical</div>
+        </div>
+    </div>
+
+    <div class="nav-right">
+        <!-- Language Selector -->
+        <div class="language-selector">
+            <span style="font-size: 1.1rem;">🌐</span>
+            <select id="topLanguageSelect" class="language-select">
+                <option value="en">English</option>
+                <option value="hi">हिन्दी</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <!-- Voice Toggle -->
+        <button id="voiceToggle" class="toggle-btn active" aria-label="Toggle voice" style="margin: 0 1rem;">🔊</button>
+
+        <!-- Menu Toggle -->
+        <button id="menuToggle" class="menu-toggle">☰</button>
+    </div>
+</nav>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h2 class="sidebar-title">🗂️ Navigation</h2>
+        <p class="sidebar-subtitle">Clinical Screening</p>
+        <button id="sidebarBack" class="sidebar-back">✕</button>
+    </div>
+
+    <div class="sidebar-scroll">
+        <div class="nav-section">
+            <div class="section-label">📊 Main</div>
+            <div class="nav-item active" data-view="dashboard">
+                <span class="nav-icon">📈</span>
+                <span data-i18n="navdashboard">Dashboard</span>
+            </div>
+        </div>
+
+        <div class="nav-section">
+            <div class="section-label">📖 Learn</div>
+            <div class="nav-item" data-view="info">
+                <span class="nav-icon">ℹ️</span>
+                <span data-i18n="navinfo">PD Information</span>
+            </div>
+            <div class="nav-item" data-view="patient">
+                <span class="nav-icon">👤</span>
+                <span data-i18n="navpatient">Patient Profile</span>
+            </div>
+        </div>
+
+        <div class="nav-section">
+            <div class="section-label">🔬 Screening</div>
+            <div class="nav-item disabled" data-view="voice">
+                <span class="nav-icon">🎤</span>
+                <span data-i18n="navvoice">Speech</span>
+                <span class="nav-badge">LOCKED</span>
+            </div>
+            <div class="nav-item disabled" data-view="tremor">
+                <span class="nav-icon">📳</span>
+                <span data-i18n="navtremor">Tremor</span>
+                <span class="nav-badge">LOCKED</span>
+            </div>
+            <div class="nav-item disabled" data-view="gait">
+                <span class="nav-icon">🚶</span>
+                <span data-i18n="navgait">Gait</span>
+                <span class="nav-badge">LOCKED</span>
+            </div>
+            <div class="nav-item disabled" data-view="facial">
+                <span class="nav-icon">😊</span>
+                <span data-i18n="navfacial">Facial</span>
+                <span class="nav-badge">LOCKED</span>
+            </div>
+            <div class="nav-item disabled" data-view="questions">
+                <span class="nav-icon">❓</span>
+                <span data-i18n="navquestions">Questions</span>
+                <span class="nav-badge">LOCKED</span>
+            </div>
+            <div class="nav-item disabled" data-view="spiral">
+                <span class="nav-icon">🌀</span>
+                <span data-i18n="navspiral">Spiral</span>
+                <span class="nav-badge">LOCKED</span>
+            </div>
+        </div>
+
+        <div class="nav-section">
+            <div class="section-label">📋 Results</div>
+            <div class="nav-item disabled" data-view="results">
+                <span class="nav-icon">📊</span>
+                <span data-i18n="navresults">Results</span>
+            </div>
+            <div class="nav-item disabled" data-view="report">
+                <span class="nav-icon">📄</span>
+                <span data-i18n="navreport">Report</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar-footer">
+        <p class="sidebar-credits">Created by <strong>Aradhya Chavan</strong></p>
+    </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="main-content">
+
+    <!-- DASHBOARD VIEW -->
+    <div class="view active" id="dashboardView">
+        <div class="clinical-card">
+            <div class="test-header">
+                <h2 data-i18n="dashtitle">Clinical Assessment Dashboard</h2>
+                <p data-i18n="dashsubtitle">NeuroCompass-PD Digital Screening</p>
+            </div>
+            <div class="card-content">
+                <div class="dashboard-grid">
+                    <div class="info-point">
+                        <div class="point-icon">👤</div>
+                        <h3 data-i18n="dashpatienttitle">Patient Profile</h3>
+                        <button class="btn btn-primary" data-view="patient" data-i18n="completeprofile">Complete Profile</button>
+                        <div id="patientStatus" class="status-badge status-pending" style="margin-top: 1rem;" data-i18n="dashstatusrequired">Required</div>
+                    </div>
+
+                    <div class="info-point">
+                        <div class="point-icon">🔬</div>
+                        <h3 data-i18n="dashscreeningtitle">Screening Tests</h3>
+                        <div class="screening-count"><span id="screeningStatus">0</span>/6</div>
+                        <button class="btn btn-secondary" style="opacity: 0.5; cursor: not-allowed;" data-i18n="testslocked">Tests Locked</button>
+                    </div>
+
+                    <div class="info-point">
+                        <div class="point-icon">📊</div>
+                        <h3 data-i18n="dashreporttitle">Radar Chart</h3>
+                        <button class="btn btn-secondary" id="goToReportBtn" data-view="report" disabled style="opacity: 0.5;" data-i18n="generatereport">Generate Report</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- INFO VIEW -->
+    <div class="view" id="infoView">
+        <div class="clinical-card">
+            <div class="test-header">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <div>
+                        <h2 data-i18n="infotitle">Parkinson's Disease</h2>
+                        <p data-i18n="infosubtitle">Clinical background information</p>
+                    </div>
+                    <select id="infoLanguageSelect" class="language-select" style="width: auto;">
+                        <option value="en">English</option>
+                        <option value="hi">हिन्दी</option>
+                        <option value="ru">Русский</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-content">
+                <div style="background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 12px; padding: 2rem; margin-bottom: 2rem;">
+                    <h3 data-i18n="infopdtitle" style="margin-top: 0; color: #0ea5e9;">What is Parkinson's?</h3>
+                    <p data-i18n="infopdtext" style="margin: 0; line-height: 1.8;">Progressive neurodegenerative disorder with tremor, bradykinesia, rigidity and postural instability.</p>
+                </div>
+
+                <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 2rem; margin-bottom: 2rem;">
+                    <h3 data-i18n="infoupdrstitle" style="margin-top: 0; color: #10b981;">MDS-UPDRS Assessment</h3>
+                    <p data-i18n="infoupdrstext" style="margin: 0; line-height: 1.8;">Motor examination with 18 items scored 0–4.</p>
+                </div>
+
+                <button class="btn btn-primary btn-block" data-view="patient" style="margin-top: 2rem;" data-i18n="infonext">Proceed to Patient Contact</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PATIENT VIEW -->
+    <div class="view" id="patientView">
+        <div class="clinical-card">
+            <div class="test-header">
+                <h2 data-i18n="patienttitle">Patient Information</h2>
+                <p data-i18n="patientsubtitle">Required for documentation</p>
+            </div>
+            <div class="card-content">
+                <form id="patientForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" data-i18n="labelfirstname">First Name</label>
+                            <input type="text" id="firstName" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" data-i18n="labellastname">Last Name</label>
+                            <input type="text" id="lastName" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" data-i18n="labeldob">Date of Birth</label>
+                            <input type="date" id="dateOfBirth" class="form-control" required>
+                            <div id="ageWarning" class="form-hint" style="color: #ef4444; display: none;" data-i18n="agewarning">⚠️ Must be 18+</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" data-i18n="labelgender">Gender</label>
+                            <select id="gender" class="form-control" required>
+                                <option value="">Select</option>
+                                <option value="male" data-i18n="gendermale">Male</option>
+                                <option value="female" data-i18n="genderfemale">Female</option>
+                                <option value="other" data-i18n="genderother">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" data-i18n="labelcountry">Country Code</label>
+                            <select id="countryCode" class="form-control" required>
+                                <option value="">Select Country</option>
+                                <option value="+1">🇺🇸 +1 (USA)</option>
+                                <option value="+44">🇬🇧 +44 (UK)</option>
+                                <option value="+91">🇮🇳 +91 (India)</option>
+                                <option value="+86">🇨🇳 +86 (China)</option>
+                                <option value="+81">🇯🇵 +81 (Japan)</option>
+                                <option value="+49">🇩🇪 +49 (Germany)</option>
+                                <option value="+33">🇫🇷 +33 (France)</option>
+                                <option value="+39">🇮🇹 +39 (Italy)</option>
+                                <option value="+34">🇪🇸 +34 (Spain)</option>
+                                <option value="+7">🇷🇺 +7 (Russia)</option>
+                                <option value="+55">🇧🇷 +55 (Brazil)</option>
+                                <option value="+61">🇦🇺 +61 (Australia)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" data-i18n="labelphone">Phone</label>
+                            <input type="tel" id="phoneNumber" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" data-i18n="labelemail">Email</label>
+                            <input type="email" id="email" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" data-i18n="labelmedicalid">Medical ID</label>
+                            <input type="text" id="medicalId" class="form-control">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block" data-i18n="patientsave">Save & Unlock Screening</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- VOICE VIEW -->
+    <div class="view" id="voiceView">
+        <div class="clinical-card">
+            <div class="test-header">
+                <h2>🎤 <span data-i18n="voicetitle">Speech Assessment</span></h2>
+                <p data-i18n="voicesubtitle">3 trials of sustained phonation</p>
+            </div>
+            <div class="card-content">
+                <!-- Countdown -->
+                <div id="countdownContainer" style="display: none; text-align: center; margin-bottom: 2rem;">
+                    <p data-i18n="startingin">Starting in</p>
+                    <div id="countdownTimer" style="font-size: 4rem; font-weight: 900; color: var(--warning);">3</div>
+                </div>
+
+                <div style="background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+                    <p style="margin: 0; font-size: 0.95rem;"><span data-i18n="voiceinstructions1">Say</span> <strong>"AAAAA"</strong> <span data-i18n="voiceinstructions2">for 8 seconds.</span></p>
+                </div>
+
+                <div class="metrics-grid">
+                    <div style="background: var(--bg-glass); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; text-align: center;">
+                        <div style="font-size: 2rem; margin-bottom: 1rem;">🎙️ <span data-i18n="trial">Trial</span> 1</div>
+                        <button id="voiceTrial1Btn" class="btn btn-primary btn-block" style="margin-bottom: 0.75rem;" data-i18n="recordtrial">Record Trial 1</button>
+                        <button id="voiceTrial1Play" class="btn btn-secondary btn-block" disabled style="margin-bottom: 0.75rem;">▶ <span data-i18n="playback">Playback</span></button>
+                        <div id="voiceTrial1Status" class="status-badge status-pending">Pending</div>
+                        <canvas id="voiceWave1" style="width: 100%; height: 50px; margin-top: 1rem; background: rgba(0,0,0,0.2); border-radius: 6px;"></canvas>
+                    </div>
+
+                    <div style="background: var(--bg-glass); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; text-align: center;">
+                        <div style="font-size: 2rem; margin-bottom: 1rem;">🎙️ <span data-i18n="trial">Trial</span> 2</div>
+                        <button id="voiceTrial2Btn" class="btn btn-primary btn-block" style="margin-bottom: 0.75rem;" data-i18n="recordtrial">Record Trial 2</button>
+                        <button id="voiceTrial2Play" class="btn btn-secondary btn-block" disabled style="margin-bottom: 0.75rem;">▶ <span data-i18n="playback">Playback</span></button>
+                        <div id="voiceTrial2Status" class="status-badge status-pending">Pending</div>
+                        <canvas id="voiceWave2" style="width: 100%; height: 50px; margin-top: 1rem; background: rgba(0,0,0,0.2); border-radius: 6px;"></canvas>
+                    </div>
+
+                    <div style="background: var(--bg-glass); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; text-align: center;">
+                        <div style="font-size: 2rem; margin-bottom: 1rem;">🎙️ <span data-i18n="trial">Trial</span> 3</div>
+                        <button id="voiceTrial3Btn" class="btn btn-primary btn-block" style="margin-bottom: 0.75rem;" data-i18n="recordtrial">Record Trial 3</button>
+                        <button id="voiceTrial3Play" class="btn btn-secondary btn-block" disabled style="margin-bottom: 0.75rem;">▶ <span data-i18n="playback">Playback</span></button>
+                        <div id="voiceTrial3Status" class="status-badge status-pending">Pending</div>
+                        <canvas id="voiceWave3" style="width: 100%; height: 50px; margin-top: 1rem; background: rgba(0,0,0,0.2); border-radius: 6px;"></canvas>
+                    </div>
+                </div>
+
+                <!-- Metrics Table -->
+                <div style="margin: 2rem 0; overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <th style="text-align: left; padding: 0.75rem;" data-i18n="trial">Trial</th>
+                                <th style="text-align: left; padding: 0.75rem;" data-i18n="jitter">Jitter (%)</th>
+                                <th style="text-align: left; padding: 0.75rem;" data-i18n="shimmer">Shimmer (dB)</th>
+                                <th style="text-align: left; padding: 0.75rem;" data-i18n="hnr">HNR (dB)</th>
+                                <th style="text-align: left; padding: 0.75rem;" data-i18n="f0">F0 (Hz)</th>
+                                <th style="text-align: left; padding: 0.75rem;" data-i18n="status">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr id="voiceMetricsRow1" style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 0.75rem;">1</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="jitter1">—</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="shimmer1">—</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="hnr1">—</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="f01">—</td>
+                                <td style="padding: 0.75rem;"><span id="voiceStatus1" class="status-badge status-pending">Pending</span></td>
+                            </tr>
+                            <tr id="voiceMetricsRow2" style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 0.75rem;">2</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="jitter2">—</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="shimmer2">—</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="hnr2">—</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="f02">—</td>
+                                <td style="padding: 0.75rem;"><span id="voiceStatus2" class="status-badge status-pending">Pending</span></td>
+                            </tr>
+                            <tr id="voiceMetricsRow3">
+                                <td style="padding: 0.75rem;">3</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="jitter3">—</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="shimmer3">—</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="hnr3">—</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="f03">—</td>
+                                <td style="padding: 0.75rem;"><span id="voiceStatus3" class="status-badge status-pending">Pending</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button id="saveVoiceResults" class="btn btn-success" style="flex: 1;" data-i18n="savecontinue">Save & Continue</button>
+                    <button class="btn btn-secondary" data-view="dashboard" style="flex: 1;" data-i18n="backtodash">Back</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TREMOR VIEW -->
+    <div class="view" id="tremorView">
+        <div class="clinical-card">
+            <div class="test-header">
+                <h2>📳 <span data-i18n="tremortitle">Tremor Assessment</span></h2>
+                <p data-i18n="tremorsubtitle">Hand tremor recording</p>
+            </div>
+            <div class="card-content">
+                <!-- Countdown -->
+                <div id="tremorCountdownContainer" style="display: none; text-align: center; margin-bottom: 2rem;">
+                    <p data-i18n="startingin">Starting in</p>
+                    <div id="tremorCountdownTimer" style="font-size: 4rem; font-weight: 900; color: var(--warning);">3</div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+                    <div>
+                        <h3 style="margin-top: 0;" data-i18n="selecthand">Select Hand</h3>
+                        <div style="display: flex; gap: 1rem;">
+                            <button id="tremorLeftBtn" class="btn btn-secondary" data-hand="left" style="flex: 1;">👈 <span data-i18n="lefthand">Left</span></button>
+                            <button id="tremorRightBtn" class="btn btn-primary" data-hand="right" style="flex: 1;"><span data-i18n="righthand">Right</span> 👉</button>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="margin-top: 0;" data-i18n="recordingstatus">Status</h3>
+                        <div style="background: var(--bg-glass); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; text-align: center;">
+                            <div id="tremorTimer" style="font-size: 2.5rem; font-weight: 800; color: var(--warning); margin-bottom: 1rem;">00:00</div>
+                            <button id="tremorStartBtn" class="btn btn-primary btn-block" data-i18n="startrecording">Start Recording</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Metrics Table with Animation -->
+                <div style="margin: 2rem 0; overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <th style="text-align: left; padding: 0.75rem;" data-i18n="metric">Metric</th>
+                                <th style="text-align: left; padding: 0.75rem;" data-i18n="value">Value</th>
+                                <th style="text-align: left; padding: 0.75rem;" data-i18n="unit">Unit</th>
+                                <th style="text-align: left; padding: 0.75rem;" data-i18n="status">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid var(--border); animation: pulse-row 2s infinite;">
+                                <td style="padding: 0.75rem;" data-i18n="frequency">Frequency</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="freqVal">—</td>
+                                <td style="padding: 0.75rem;">Hz</td>
+                                <td style="padding: 0.75rem;"><span id="freqSev" class="status-badge status-pending">Pending</span></td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border); animation: pulse-row 2s infinite 0.3s;">
+                                <td style="padding: 0.75rem;" data-i18n="amplitude">Amplitude</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="ampVal">—</td>
+                                <td style="padding: 0.75rem;">m/s²</td>
+                                <td style="padding: 0.75rem;"><span id="ampSev" class="status-badge status-pending">Pending</span></td>
+                            </tr>
+                            <tr style="animation: pulse-row 2s infinite 0.6s;">
+                                <td style="padding: 0.75rem;" data-i18n="power">Power</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="powVal">—</td>
+                                <td style="padding: 0.75rem;">dB</td>
+                                <td style="padding: 0.75rem;"><span id="powSev" class="status-badge status-pending">Pending</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button id="saveTremorResults" class="btn btn-success" style="flex: 1;" data-i18n="savecontinue">Save & Continue</button>
+                    <button class="btn btn-secondary" data-view="dashboard" style="flex: 1;" data-i18n="backtodash">Back</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GAIT VIEW -->
+    <div class="view" id="gaitView">
+        <div class="clinical-card">
+            <div class="test-header">
+                <h2>🚶 <span data-i18n="gaittitle">Gait Assessment</span></h2>
+                <p data-i18n="gaitsubtitle">Pose tracking and cadence</p>
+            </div>
+            <div class="card-content">
+                <!-- Countdown -->
+                <div id="gaitCountdownContainer" style="display: none; text-align: center; margin-bottom: 2rem;">
+                    <p data-i18n="startingin">Starting in</p>
+                    <div id="gaitCountdownTimer" style="font-size: 4rem; font-weight: 900; color: var(--warning);">3</div>
+                </div>
+
+                <div style="background: var(--bg-glass); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; text-align: center;">
+                    <p style="margin: 0 0 1.5rem 0;" data-i18n="gaitinstructions">Position camera for full body. Walk naturally for 15 seconds.</p>
+                    <button id="gaitStartBtn" class="btn btn-primary" data-i18n="startgait">🎥 Start Gait Recording</button>
+                </div>
+
+                <div style="margin: 2rem 0; overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <th style="text-align: left; padding: 0.75rem;" data-i18n="metric">Metric</th>
+                                <th style="text-align: left; padding: 0.75rem;" data-i18n="value">Value</th>
+                                <th style="text-align: left; padding: 0.75rem;" data-i18n="status">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 0.75rem;" data-i18n="cadence">Cadence</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="cadVal">—</td>
+                                <td style="padding: 0.75rem;"><span id="cadSev" class="status-badge status-pending">Pending</span></td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 0.75rem;" data-i18n="stridelength">Stride Length</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="strVal">—</td>
+                                <td style="padding: 0.75rem;"><span id="strSev" class="status-badge status-pending">Pending</span></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 0.75rem;" data-i18n="gaitspeed">Gait Speed</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="spdVal">—</td>
+                                <td style="padding: 0.75rem;"><span id="spdSev" class="status-badge status-pending">Pending</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button id="saveGaitResults" class="btn btn-success" style="flex: 1;" data-i18n="savecontinue">Save & Continue</button>
+                    <button class="btn btn-secondary" data-view="dashboard" style="flex: 1;" data-i18n="backtodash">Back</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FACIAL VIEW -->
+    <div class="view" id="facialView">
+        <div class="clinical-card">
+            <div class="test-header">
+                <h2>😊 <span data-i18n="facialtitle">Facial Expression</span></h2>
+                <p data-i18n="facialsubtitle">Face mesh analysis</p>
+            </div>
+            <div class="card-content">
+                <!-- Countdown -->
+                <div id="facialCountdownContainer" style="display: none; text-align: center; margin-bottom: 2rem;">
+                    <p data-i18n="startingin">Starting in</p>
+                    <div id="facialCountdownTimer" style="font-size: 4rem; font-weight: 900; color: var(--warning);">3</div>
+                </div>
+
+                <div style="background: var(--bg-glass); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; text-align: center;">
+                    <p style="margin: 0 0 1.5rem 0;" data-i18n="facialinstructions">Position face clearly. Maintain natural expression for 10 seconds.</p>
+                    <button id="facialStartBtn" class="btn btn-primary" data-i18n="startfacial">📱 Start Facial Recording</button>
+                </div>
+
+                <div style="margin: 2rem 0; overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <th style="text-align: left; padding: 0.75rem;" data-i18n="metric">Metric</th>
+                                <th style="text-align: left; padding: 0.75rem;" data-i18n="value">Value</th>
+                                <th style="text-align: left; padding: 0.75rem;" data-i18n="status">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 0.75rem;" data-i18n="blinkrate">Blink Rate</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="blkVal">—</td>
+                                <td style="padding: 0.75rem;"><span id="blkSev" class="status-badge status-pending">Pending</span></td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 0.75rem;" data-i18n="jawopening">Jaw Opening</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="jawVal">—</td>
+                                <td style="padding: 0.75rem;"><span id="jawSev" class="status-badge status-pending">Pending</span></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 0.75rem;" data-i18n="mouthwidth">Mouth Width</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="mthVal">—</td>
+                                <td style="padding: 0.75rem;"><span id="mthSev" class="status-badge status-pending">Pending</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button id="saveFacialResults" class="btn btn-success" style="flex: 1;" data-i18n="savecontinue">Save & Continue</button>
+                    <button class="btn btn-secondary" data-view="dashboard" style="flex: 1;" data-i18n="backtodash">Back</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUESTIONS VIEW -->
+    <div class="view" id="questionsView">
+        <div class="clinical-card">
+            <div class="test-header">
+                <h2>❓ <span data-i18n="questionstitle">Question Assessment</span></h2>
+                <p data-i18n="questionssubtitle">Clinical context items</p>
+            </div>
+            <div class="card-content">
+                <form id="questionsForm">
+                    <div style="margin-bottom: 2.5rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border);">
+                        <label class="form-label" data-i18n="q1">1) Slowness of movement?</label>
+                        <div style="display: flex; gap: 1rem;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="q1" value="0" required style="width: 18px; height: 18px; cursor: pointer;">
+                                <span data-i18n="optno">No</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="q1" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                                <span data-i18n="optsometimes">Sometimes</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="q1" value="2" style="width: 18px; height: 18px; cursor: pointer;">
+                                <span data-i18n="optoften">Often</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 2.5rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border);">
+                        <label class="form-label" data-i18n="q2">2) Stiffness/rigidity?</label>
+                        <div style="display: flex; gap: 1rem;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="q2" value="0" required style="width: 18px; height: 18px; cursor: pointer;">
+                                <span data-i18n="optno">No</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="q2" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                                <span data-i18n="optsometimes">Sometimes</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="q2" value="2" style="width: 18px; height: 18px; cursor: pointer;">
+                                <span data-i18n="optoften">Often</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 2.5rem;">
+                        <label class="form-label" data-i18n="q3">3) Balance issues?</label>
+                        <div style="display: flex; gap: 1rem;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="q3" value="0" required style="width: 18px; height: 18px; cursor: pointer;">
+                                <span data-i18n="optno">No</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="q3" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                                <span data-i18n="optsometimes">Sometimes</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="q3" value="2" style="width: 18px; height: 18px; cursor: pointer;">
+                                <span data-i18n="optoften">Often</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem;">
+                        <button type="submit" class="btn btn-primary" style="flex: 1;" data-i18n="savecontinue">Save & Continue</button>
+                        <button type="button" class="btn btn-secondary" data-view="dashboard" style="flex: 1;" data-i18n="backtodash">Back</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- SPIRAL VIEW -->
+    <div class="view" id="spiralView">
+        <div class="clinical-card">
+            <div class="test-header">
+                <h2>🌀 <span data-i18n="spiraltitle">Spiral Tremor Test</span></h2>
+                <p data-i18n="spiralsubtitle">Draw smooth spiral</p>
+            </div>
+            <div class="card-content">
+                <div style="background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+                    <p style="margin: 0; font-size: 0.95rem;" data-i18n="spiralinstruction">Use one hand to draw spiral. Single continuous stroke.</p>
+                </div>
+
+                <canvas id="spiralCanvas" style="border: 2px solid var(--border); border-radius: 12px; width: 100%; height: 400px; background: rgba(0,0,0,0.2); margin-bottom: 1.5rem; display: block; touch-action: none;"></canvas>
+
+                <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+                    <button id="spiralClearBtn" class="btn btn-secondary" style="flex: 1;" data-i18n="clear">Clear</button>
+                    <button id="spiralSaveBtn" class="btn btn-success" style="flex: 1;" data-i18n="savespiral">Save Spiral</button>
+                </div>
+
+                <div style="margin: 2rem 0; overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <th style="text-align: left; padding: 0.75rem;" data-i18n="metric">Metric</th>
+                                <th style="text-align: left; padding: 0.75rem;" data-i18n="value">Value</th>
+                                <th style="text-align: left; padding: 0.75rem;" data-i18n="status">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 0.75rem;" data-i18n="tremorindex">Tremor Index</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="treIdx">—</td>
+                                <td style="padding: 0.75rem;"><span id="treIdxSev" class="status-badge status-pending">Pending</span></td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 0.75rem;" data-i18n="pathlength">Path Length</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="pathLen">—</td>
+                                <td style="padding: 0.75rem;"><span id="pathSev" class="status-badge status-pending">Pending</span></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 0.75rem;" data-i18n="velocity">Velocity</td>
+                                <td style="padding: 0.75rem; font-weight: 600;" id="velVal">—</td>
+                                <td style="padding: 0.75rem;"><span id="velSev" class="status-badge status-pending">Pending</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button class="btn btn-secondary" data-view="dashboard" style="flex: 1;" data-i18n="backtodash">Back</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESULTS VIEW -->
+    <div class="view" id="resultsView">
+        <div class="clinical-card">
+            <div class="test-header">
+                <h2>📊 <span data-i18n="resultstitle">Results Summary</span></h2>
+                <p data-i18n="resultssubtitle">All assessments compiled</p>
+            </div>
+            <div class="card-content">
+                <div style="overflow-x: auto; margin-bottom: 2rem;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--border);">
+                                <th style="text-align: left; padding: 1rem; background: rgba(14, 165, 233, 0.1);" data-i18n="domain">Domain</th>
+                                <th style="text-align: left; padding: 1rem; background: rgba(14, 165, 233, 0.1);" data-i18n="status">Status</th>
+                                <th style="text-align: left; padding: 1rem; background: rgba(14, 165, 233, 0.1);" data-i18n="comment">Comment</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-secondary" data-view="dashboard" style="flex: 1;" data-i18n="backtodash">Back</button>
+                    <button class="btn btn-primary" data-view="report" style="flex: 1;" data-i18n="generatereport">Generate Report</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- REPORT VIEW -->
+    <div class="view" id="reportView">
+        <div class="clinical-card">
+            <div class="test-header">
+                <h2>📄 <span data-i18n="reporttitle">Clinical Report</span></h2>
+                <p data-i18n="reportsubtitle">Patient assessment summary</p>
+            </div>
+            <div class="card-content">
+                <!-- Radar Chart -->
+                <div style="margin-bottom: 3rem; background: var(--bg-glass); border: 1px solid var(--border); border-radius: 12px; padding: 2rem;">
+                    <h3 style="margin-top: 0; color: var(--primary);" data-i18n="radarchart">Domain Radar Chart</h3>
+                    <canvas id="radarChart" style="max-width: 400px; margin: 0 auto;"></canvas>
+                </div>
+
+                <!-- Report Content -->
+                <div id="reportContent" style="background: var(--bg-glass); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; line-height: 1.8;">
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <button id="downloadPdfBtn" class="btn btn-success" style="flex: 1;">⬇️ <span data-i18n="downloadpdf">Download PDF</span></button>
+                    <button id="downloadJsonBtn" class="btn btn-secondary" style="flex: 1;">⬇️ <span data-i18n="exportjson">Export JSON</span></button>
+                    <button class="btn btn-secondary" data-view="dashboard" style="flex: 1;" data-i18n="backtodash">Back</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<!-- Scripts -->
+<script src="language.js"></script>
+<script src="mediapipe_init.js"></script>
+<script src="assessment.js"></script>
+
+</body>
+</html>
