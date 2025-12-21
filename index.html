@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f0f23">
+    <title>NeuroSynapse-PD | Clinical Assessment</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%230ea5e9'/><path d='M50 30v40M30 50h40' stroke='white' stroke-width='4'/></svg>">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- SPLASH SCREEN -->
+<div class="splash-screen" id="splashScreen">
+    <div class="splash-logo">🧠</div>
+    <h1 class="splash-title">NeuroSynapse-PD</h1>
+    <p class="splash-subtitle">Clinical Assessment Suite</p>
+    <div class="splash-progress-container">
+        <div class="splash-progress">
+            <div class="splash-progress-bar" id="splashProgress"></div>
+        </div>
+    </div>
+</div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <div class="nav-brand">
+        <div style="font-size: 1.8rem; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; background: rgba(14, 165, 233, 0.2); border-radius: 12px; color: #0ea5e9;">🧠</div>
+        <div class="nav-title-group">
+            <div class="nav-title">NeuroSynapse-PD</div>
+            <div class="nav-version">v2.5 Beta</div>
+        </div>
+    </div>
+
+    <div class="nav-right">
+        <!-- Language Selector -->
+        <div class="language-selector">
+            <span style="font-size: 1.1rem;">🌐</span>
+            <span id="currentLanguageLabel">English</span>
+            <select id="topLanguageSelect" class="language-select" style="opacity: 0; position: absolute; width: 0; height: 0;">
+                <option value="en">English</option>
+                <option value="hi">हिन्दी</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <!-- Voice Toggle -->
+        <button id="voiceToggle" class="toggle-btn active" aria-label="Toggle voice assistant" style="margin: 0 1rem;">
+            🔊
+        </button>
+
+        <!-- Menu Toggle -->
+        <button id="menuToggle" class="menu-toggle">
+            ☰
+        </button>
+    </div>
+</nav>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h2 class="sidebar-title">🗂️ Navigation</h2>
+        <p class="sidebar-subtitle">Clinical Screening Modules</p>
+        <button id="sidebarBack" class="sidebar-back" aria-label="Close sidebar">✕</button>
+    </div>
+
+    <div class="sidebar-scroll">
+        <!-- Dashboard -->
+        <div class="nav-section">
+            <div class="section-label">📊 Main</div>
+            <div class="nav-item active" data-view="dashboard">
+                <span class="nav-icon">📈</span>
+                <span data-i18n="navdashboard">Clinical Dashboard</span>
+            </div>
+        </div>
+
+        <!-- Information -->
+        <div class="nav-section">
+            <div class="section-label">📖 Learn</div>
+            <div class="nav-item" data-view="info">
+                <span class="nav-icon">ℹ️</span>
+                <span data-i18n="navinfo">PD Information</span>
+            </div>
+            <div class="nav-item" data-view="patient">
+                <span class="nav-icon">👤</span>
+                <span data-i18n="navpatient">Patient Profile</span>
+            </div>
+        </div>
+
+        <!-- Screening Tests -->
+        <div class="nav-section">
+            <div class="section-label">🔬 Screening</div>
+            <div class="nav-item disabled" data-view="voice">
+                <span class="nav-icon">🎤</span>
+                <span data-i18n="navvoice">Speech 3.1</span>
+                <span class="nav-badge">LOCKED</span>
+            </div>
+            <div class="nav-item disabled" data-view="tremor">
+                <span class="nav-icon">📳</span>
+                <span data-i18n="navtremor">Tremor 3.15-18</span>
+                <span class="nav-badge">LOCKED</span>
+            </div>
+            <div class="nav-item disabled" data-view="gait">
+                <span class="nav-icon">🚶</span>
+                <span data-i18n="navgait">Gait 3.10-11</span>
+                <span class="nav-badge">LOCKED</span>
+            </div>
+            <div class="nav-item disabled" data-view="facial">
+                <span class="nav-icon">😊</span>
+                <span data-i18n="navfacial">Facial 3.2</span>
+                <span class="nav-badge">LOCKED</span>
+            </div>
+            <div class="nav-item disabled" data-view="questions">
+                <span class="nav-icon">❓</span>
+                <span data-i18n="navquestions">Question Assessment</span>
+                <span class="nav-badge">LOCKED</span>
+            </div>
+            <div class="nav-item disabled" data-view="spiral">
+                <span class="nav-icon">🌀</span>
+                <span data-i18n="navspiral">Spiral Tremor</span>
+                <span class="nav-badge">LOCKED</span>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="nav-section">
+            <div class="section-label">📋 Results</div>
+            <div class="nav-item disabled" data-view="results">
+                <span class="nav-icon">📊</span>
+                <span data-i18n="navresults">Screening Results</span>
+            </div>
+            <div class="nav-item disabled" data-view="report">
+                <span class="nav-icon">📄</span>
+                <span data-i18n="navreport">Download Summary</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar-footer">
+        <p class="sidebar-credits">
+            <span>Created by <strong>Aradhya Chavan</strong></span>
+        </p>
+    </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="main-content">
+
+    <!-- DASHBOARD VIEW -->
+    <div class="view active" id="dashboardView">
+        <div class="clinical-card">
+            <div class="test-header">
+                <h2 data-i18n="dashtitle">Clinical Assessment Dashboard</h2>
+                <p data-i18n="dashsubtitle">MDS-UPDRS Part III digital screening summary</p>
+            </div>
+            <div class="card-content">
+                <div class="dashboard-grid">
+                    <!-- Patient Profile Card -->
+                    <div class="info-point">
+                        <div class="point-icon">👤</div>
+                        <h3 data-i18n="dashpatienttitle">Patient Profile</h3>
+                        <p data-i18n="dashpatientdesc">Complete demographic and contact details.</p>
+                        <button class="btn btn-primary" data-view="patient">
+                            Complete Profile
+                        </button>
+                        <div id="patientStatus" class="status-badge status-pending" style="margin-top: 1rem;">
+                            <span>Required</span>
+                        </div>
+                    </div>
+
+                    <!-- Screening Tests Card -->
+                    <div class="info-point">
+                        <div class="point-icon">🔬</div>
+                        <h3 data-i18n="dashscreeningtitle">Screening Tests</h3>
+                        <p data-i18n="dashscreeningdesc">Speech, tremor, gait and facial expression.</p>
+                        <div class="screening-count" style="margin: 1rem 0; font-size: 2rem; font-weight: 800; color: var(--primary);">
+                            <span id="screeningStatus">0</span>/6
+                        </div>
+                        <button class="btn btn-secondary" data-view="voice" style="opacity: 0.5; cursor: not-allowed;">
+                            Tests Locked
+                        </button>
+                    </div>
+
+                    <!-- Results Card -->
+                    <div class="info-point">
+                        <div class="point-icon">📊</div>
+                        <h3 data-i18n="dashreporttitle">Radar Summary</h3>
+                        <p data-i18n="dashreportdesc">Downloadable radar chart with domain scores.</p>
+                        <button class="btn btn-secondary" id="goToReportBtn" data-view="report" disabled style="opacity: 0.5; cursor: not-allowed;">
+                            Generate Report
+                        </button>
+                        <div id="reportStatus" class="status-badge status-pending" style="margin-top: 1rem;">
+                            <span>Complete All Tests</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- INFO VIEW -->
+    <div class="view" id="infoView">
+        <div class="clinical-card">
+            <div class="test-header">
+                <h2 data-i18n="infotitle">Parkinson's Disease Information</h2>
+                <p data-i18n="infosubtitle">Clinical background and MDS-UPDRS Part III protocol</p>
+            </div>
+            <div class="card-content">
+                <div style="background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 12px; padding: 2rem; margin-bottom: 2rem;">
+                    <h3 data-i18n="infopdtitle" style="margin-top: 0; color: #0ea5e9;">What is Parkinson's Disease?</h3>
+                    <p data-i18n="infopdtext" style="margin: 0; line-height: 1.8;">Progressive neurodegenerative disorder with tremor, bradykinesia, rigidity and postural instability.</p>
+                </div>
+
+                <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 2rem; margin-bottom: 2rem;">
+                    <h3 data-i18n="infoupdrstitle" style="margin-top: 0; color: #10b981;">MDS-UPDRS Part III Assessment</h3>
+                    <p data-i18n="infoupdrstext" style="margin: 0; line-height: 1.8;">Motor examination with 18 items scored 0–4 (0 = normal, 4 = severe).</p>
+                </div>
+
+                <div style="background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 12px; padding: 2rem; margin-bottom: 2rem;">
+                    <h3 data-i18n="infobiomarkertitle" style="margin-top: 0; color: #fbbf24;">Digital Biomarkers</h3>
+                    <p data-i18n="infobiomarkertext" style="margin: 0; line-height: 1.8;">Speech, tremor, gait and facial metrics captured as objective digital signatures.</p>
+                </div>
+
+                <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+                    <p data-i18n="infonote" style="margin: 0; font-size: 0.95rem; line-height: 1.6; color: var(--text-secondary);"></p>
+                </div>
+
+                <button class="btn btn-primary btn-block" data-view="patient" style="margin-top: 2rem;">
+                    <span data-i18n="infonext">Proceed to Patient Contact Information</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PATIENT VIEW -->
+    <div class="view" id="patientView">
+        <div class="clinical-card">
+            <div class="test-header">
+                <h2 data-i18n="patienttitle">Patient Demographic & Contact Information</h2>
+                <p data-i18n="patientsubtitle">Required for documentation before screening</p>
+            </div>
+            <div class="card-content">
+                <form id="patientForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="firstName" data-i18n="labelfirstname">First Name</label>
+                            <input type="text" id="firstName" class="form-control" required placeholder="John">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="lastName" data-i18n="labellastname">Last Name</label>
+                            <input type="text" id="lastName" class="form-control" required placeholder="Doe">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="dateOfBirth" data-i18n="labeldob">Date of Birth</label>
+                            <input type="date" id="dateOfBirth" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="gender" data-i18n="labelgender">Gender</label>
+                            <select id="gender" class="form-control" required>
+                                <option value="" data-i18n="genderselect">Select Gender</option>
+                                <option value="male" data-i18n="gendermale">Male</option>
+                                <option value="female" data-i18n="genderfemale">Female</option>
+                                <option value="other" data-i18n="genderother">Other</option>
+                                <option value="na" data-i18n="genderna">Prefer not to say</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="countryCode" data-i18n="labelcountry">Country Code</label>
+                            <input type="text" id="countryCode" class="form-control" placeholder="+91">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="phoneNumber" data-i18n="labelphone">Phone Number</label>
+                            <input type="tel" id="phoneNumber" class="form-control" placeholder="9876543210">
+                            <div class="form-hint" data-i18n="hintphone">Enter digits only, without country code</div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="email" data-i18n="labelemail">Email Address</label>
+                            <input type="email" id="email" class="form-control" placeholder="patient@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="medicalId" data-i18n="labelmedicalid">Medical Record Number</label>
+                            <input type="text" id="medicalId" class="form-control" placeholder="MRN-2024-001">
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+                        <p data-i18n="patientnote" style="margin: 0; font-size: 0.95rem; line-height: 1.6; color: var(--text-secondary);"></p>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <span data-i18n="patientsave">Save & Unlock Screening</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- VOICE VIEW -->
+    <div class="view" id="voiceView">
+        <div class="clinical-card">
+            <div class="test-header">
+                <h2>🎤 Speech Assessment (UPDRS 3.1)</h2>
+                <p>Record 3 trials of sustained phonation (AAAAA)</p>
+            </div>
+            <div class="card-content">
+                <div style="background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+                    <p style="margin: 0; font-size: 0.95rem; line-height: 1.6;">Say <strong>"AAAAA"</strong> clearly for approximately 8 seconds. Silence in environment helps capture quality voice samples.</p>
+                </div>
+
+                <div class="metrics-grid">
+                    <!-- Trial 1 -->
+                    <div style="background: var(--bg-glass); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; text-align: center;">
+                        <div style="font-size: 2.5rem; margin-bottom: 1rem;">🎙️ Trial 1</div>
+                        <button id="voiceTrial1Btn" class="btn btn-primary btn-block" style="margin-bottom: 0.75rem;">Record Trial 1</button>
+                        <button id="voiceTrial1Play" class="btn btn-secondary btn-block" disabled style="margin-bottom: 0.75rem;">▶ Playback</button>
+                        <div id="voiceTrial1Status" class="status-badge status-pending">Pending</div>
+                        <canvas id="voiceWave1" style="width: 100%; height: 50px; margin-top: 1rem; background: rgba(0,0,0,0.2); border-radius: 6px;"></canvas>
+                    </div>
+
+                    <!-- Trial 2 -->
+                    <div style="background: var(--bg-glass); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; text-align: center;">
+                        <div style="font-size: 2.5rem; margin-bottom: 1rem;">🎙️ Trial 2</div>
+                        <button id="voiceTrial2Btn" class="btn btn-primary btn-block" style="margin-bottom: 0.75rem;">Record Trial 2</button>
+                        <button id="voiceTrial2Play" class="btn btn-secondary btn-block" disabled style="margin-bottom: 0.75rem;">▶ Playback</button>
+                        <div id="voiceTrial2Status" class="status-badge status-pending">Pending</div>
+                        <canvas id="voiceWave2" style="width: 100%; height: 50px; margin-top: 1rem; background: rgba(0,0,0,0.2); border-radius: 6px;"></canvas>
+                    </div>
+
+                    <!-- Trial 3 -->
+                    <div style="background: var(--bg-glass); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; text-align: center;">
+                        <div style="font-size: 2.5rem; margin-bottom: 1rem;">🎙️ Trial 3</div>
+                        <button id="voiceTrial3Btn" class="btn btn-primary btn-block" style="margin-bottom: 0.75rem;">Record Trial 3</button>
+                        <button id="voiceTrial3Play" class="btn btn-secondary btn-block" disabled style="margin-bottom: 0.75rem;">▶ Playback</button>
+                        <div id="voiceTrial3Status" class="status-badge status-pending">Pending</div>
+                        <canvas id="voiceWave3" style="width: 100%; height: 50px; margin-top: 1rem; background: rgba(0,0,0,0.2); border-radius: 6px;"></canvas>
+                    </div>
+                </div>
+
+                <!-- Timers -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 2rem 0; text-align: center;">
+                    <div>
+                        <p style="color: var(--text-muted); margin: 0 0 0.5rem 0;">Pre-Recording</p>
+                        <div id="voicePreTimer" style="font-size: 2rem; font-weight: 800; color: var(--primary);">3</div>
+                    </div>
+                    <div>
+                        <p style="color: var(--text-muted); margin: 0 0 0.5rem 0;">Recording Time</p>
+                        <div id="voiceMainTimer" style="font-size: 2rem; font-weight: 800; color: var(--warning);">00:00</div>
+                    </div>
+                </div>
+
+                <!-- Metrics Table -->
+                <div style="margin: 2rem 0;">
+                    <h3 style="margin-top: 0;">Jitter & Metrics Alignment</h3>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border);">
+                                    <th style="text-align: left; padding: 0.75rem; color: var(--text-secondary); font-weight: 600;">Trial</th>
+                                    <th style="text-align: left; padding: 0.75rem; color: var(--text-secondary); font-weight: 600;">Jitter (%)</th>
+                                    <th style="text-align: left; padding: 0.75rem; color: var(--text-secondary); font-weight: 600;">Shimmer (dB)</th>
+                                    <th style="text-align: left; padding: 0.75rem; color: var(--text-secondary); font-weight: 600;">HNR (dB)</th>
+                                    <th style="text-align: left; padding: 0.75rem; color: var(--text-secondary); font-weight: 600;">Duration (s)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr id="voiceMetricsRow1" style="border-bottom: 1px solid var(--border);">
+                                    <td style="padding: 0.75rem; color: var(--text-secondary);">Trial 1</td>
+                                    <td style="padding: 0.75rem;">—</td>
+                                    <td style="padding: 0.75rem;">—</td>
+                                    <td style="padding: 0.75rem;">—</td>
+                                    <td style="padding: 0.75rem;">—</td>
+                                </tr>
+                                <tr id="voiceMetricsRow2" style="border-bottom: 1px solid var(--border);">
+                                    <td style="padding: 0.75rem; color: var(--text-secondary);">Trial 2</td>
+                                    <td style="padding: 0.75rem;">—</td>
+                                    <td style="padding: 0.75rem;">—</td>
+                                    <td style="padding: 0.75rem;">—</td>
+                                    <td style="padding: 0.75rem;">—</td>
+                                </tr>
+                                <tr id="voiceMetricsRow3">
+                                    <td style="padding: 0.75rem; color: var(--text-secondary);">Trial 3</td>
+                                    <td style="padding: 0.75rem;">—</td>
+                                    <td style="padding: 0.75rem;">—</td>
+                                    <td style="padding: 0.75rem;">—</td>
+                                    <td style="padding: 0.75rem;">—</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button id="saveVoiceResults" class="btn btn-success" style="flex: 1;">
+                        ✓ Save & Continue
+                    </button>
+                    <button class="btn btn-secondary" data-view="dashboard" style="flex: 1;">
+                        Back to Dashboard
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TREMOR VIEW -->
+    <div class="view" id="tremorView">
+        <div class="clinical-card">
+            <div class="test-header">
+                <h2>📳 Tremor Assessment (UPDRS 3.15-18)</h2>
+                <p>DeviceMotion capture for resting tremor detection</p>
+            </div>
+            <div class="card-content">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+                    <div>
+                        <h3 style="margin-top: 0;">Select Hand</h3>
+                        <div class="hand-select">
+                            <button id="tremorLeftBtn" class="btn btn-secondary" data-hand="left" style="flex: 1;">
+                                👈 Left Hand
+                            </button>
+                            <button id="tremorRightBtn" class="btn btn-primary" data-hand="right" style="flex: 1;">
+                                Right Hand 👉
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="margin-top: 0;">Recording Status</h3>
+                        <div style="background: var(--bg-glass); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; text-align: center;">
+                            <div id="tremorTimer" style="font-size: 2.5rem; font-weight: 800; color: var(--warning); margin-bottom: 1rem;">00:00</div>
+                            <button id="tremorStartBtn" class="btn btn-primary btn-block">
+                                🔴 Start Recording
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Metrics Table -->
+                <div style="margin: 2rem 0;">
+                    <h3 style="margin-top: 0;">Tremor Metrics & Analysis</h3>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border);">
+                                    <th style="text-align: left; padding: 0.75rem; color: var(--text-secondary); font-weight: 600;">Metric</th>
+                                    <th style="text-align: left; padding: 0.75rem; color: var(--text-secondary); font-weight: 600;">Value</th>
+                                    <th style="text-align: left; padding: 0.75rem; color: var(--text-secondary); font-weight: 600;">Unit</th>
+                                    <th style="text-align: left; padding: 0.75rem; color: var(--text-secondary); font-weight: 600;">Severity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom: 1px solid var(--border);">
+                                    <td style="padding: 0.75rem; color: var(--text-secondary);">Frequency</td>
+                                    <td style="padding: 0.75rem; font-weight: 600;">—</td>
+                                    <td style="padding: 0.75rem;">Hz</td>
+                                    <td style="padding: 0.75rem;"><span class="status-badge status-pending">Pending</span></td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid var(--border);">
+                                    <td style="padding: 0.75rem; color: var(--text-secondary);">Amplitude</td>
+                                    <td style="padding: 0.75rem; font-weight: 600;">—</td>
+                                    <td style="padding: 0.75rem;">m/s²</td>
+                                    <td style="padding: 0.75rem;"><span class="status-badge status-pending">Pending</span></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; color: var(--text-secondary);">Power</td>
+                                    <td style="padding: 0.75rem; font-weight: 600;">—</td>
+                                    <td style="padding: 0.75rem;">dB</td>
+                                    <td style="padding: 0.75rem;"><span class="status-badge status-pending">Pending</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button id="saveTremorResults" class="btn btn-success" style="flex: 1;">
+                        ✓ Save & Continue
+                    </button>
+                    <button class="btn btn-secondary" data-view="dashboard" style="flex: 1;">
+                        Back to Dashboard
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GAIT VIEW -->
+    <div class="view" id="gaitView">
+        <div class="clinical-card">
+            <div class="test-header">
+                <h2>🚶 Gait Assessment (UPDRS 3.10-11)</h2>
+                <p>Pose tracking and cadence analysis</p>
+            </div>
+            <div class="card-content">
+                <div style="background: var(--bg-glass); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; text-align: center;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">📹</div>
+                    <p style="margin: 0 0 1.5rem 0; color: var(--text-secondary);">Position camera to capture full body. Walk naturally for 15 seconds.</p>
+                    <button id="gaitStartBtn" class="btn btn-primary">
+                        🎥 Start Gait Recording
+                    </button>
+                </div>
+
+                <!-- Metrics Table -->
+                <div style="margin: 2rem 0;">
+                    <h3 style="margin-top: 0;">Gait Metrics & Kinematic Analysis</h3>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border);">
+                                    <th style="text-align: left; padding: 0.75rem; color: var(--text-secondary); font-weight: 600;">Metric</th>
+                                    <th style="text-align: left; padding: 0.75rem; color: var(--text-secondary); font-weight: 600;">Value</th>
+                                    <th style="text-align: left; padding: 0.75rem; color: var(--text-secondary); font-weight: 600;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom: 1px solid var(--border);">
+                                    <td style="padding: 0.75rem; color: var(--text-secondary);">Cadence</td>
+                                    <td style="padding: 0.75rem; font-weight: 600;">—</td>
+                                    <td style="padding: 0.75rem;"><span class="status-badge status-pending">Pending</span></td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid var(--border);">
+                                    <td style="padding: 0.75rem; color: var(--text-secondary);">Stride Length</td>
+                                    <td style="padding: 0.75rem; font-weight: 600;">—</td>
+                                    <td style="padding: 0.75rem;"><span class="status-badge status-pending">Pending</span></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; color: var(--text-secondary);">Gait Speed</td>
+                                    <td style="padding: 0.75rem; font-weight: 600;">—</td>
+                                    <td style="padding: 0.75rem;"><span class="status-badge status-pending">Pending</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button id="saveGaitResults" class="btn btn-success" style="flex: 1;">
+                        ✓ Save & Continue
+                    </button>
+                    <button class="btn btn-secondary" data-view="dashboard" style="flex: 1;">
+                        Back to Dashboard
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FACIAL VIEW -->
+    <div class="view" id="facialView">
+        <div class="clinical-card">
+            <div class="test-header">
+                <h2>😊 Facial Expression (UPDRS 3.2)</h2>
+                <p>Face mesh analysis and expression assessment</p>
+            </div>
+            <div class="card-content">
+                <div style="background: var(--bg-glass); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; text-align: center;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">📷</div>
+                    <p style="margin: 0 0 1.5rem 0; color: var(--text-secondary);">Position face clearly in frame. Maintain natural expression for 10 seconds.</p>
+                    <button id="facialStartBtn" class="btn btn-primary">
+                        📱 Start Facial Recording
+                    </button>
+                </div>
+
+                <!-- Metrics Table -->
+                <div style="margin: 2rem 0;">
+                    <h3 style="margin-top: 0;">Facial Expression Metrics</h3>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border);">
+                                    <th style="text-align: left; padding: 0.75rem; color: var(--text-secondary); font-weight: 600;">Metric</th>
+                                    <th style="text-align: left; padding: 0.75rem; color: var(--text-secondary); font-weight: 600;">Value</th>
+                                    <th style="text-align: left; padding: 0.75rem; color: var(--text-secondary); font-weight: 600;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom: 1px solid var(--border);">
+                                    <td style="padding: 0.75rem; color: var(--text-secondary);">Blink Rate</td>
+                                    <td style="padding: 0.75rem; font-weight: 600;">—</td>
+                                    <td style="padding: 0.75rem;"><span class="status-badge status-pending">Pending</span></td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid var(--border);">
+                                    <td style="padding: 0.75rem; color: var(--text-secondary);">Jaw Opening</td>
+                                    <td style="padding: 0.75rem; font-weight: 600;">—</td>
+                                    <td style="padding: 0.75rem;"><span class="status-badge status-pending">Pending</span></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; color: var(--text-secondary);">Mouth Width</td>
+                                    <td style="padding: 0.75rem; font-weight: 600;">—</td>
+                                    <td style="padding: 0.75rem;"><span class="status-badge status-pending">Pending</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button id="saveFacialResults" class="btn btn-success" style="flex: 1;">
+                        ✓ Save & Continue
+                    </button>
+                    <button class="btn btn-secondary" data-view="dashboard" style="flex: 1;">
+                        Back to Dashboard
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUESTIONS VIEW -->
+    <div class="view" id="questionsView">
+        <div class="clinical-card">
+            <div class="test-header">
+                <h2>❓ Question-Based Assessment</h2>
+                <p>Clinical context supporting items</p>
+            </div>
+            <div class="card-content">
+                <form id="questionsForm">
+                    <!-- Question 1 -->
+                    <div style="margin-bottom: 2.5rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border);">
+                        <label class="form-label" data-i18n="q1">1) Do you experience slowness of movement?</label>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="q1" value="0" required style="width: 18px; height: 18px; cursor: pointer;">
+                                <span data-i18n="optno">No</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="q1" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                                <span data-i18n="optsometimes">Sometimes</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="q1" value="2" style="width: 18px; height: 18px; cursor: pointer;">
+                                <span data-i18n="optoften">Often</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Question 2 -->
+                    <div style="margin-bottom: 2.5rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border);">
+                        <label class="form-label" data-i18n="q2">2) Do you have stiffness/rigidity?</label>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="q2" value="0" required style="width: 18px; height: 18px; cursor: pointer;">
+                                <span data-i18n="optno">No</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="q2" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                                <span data-i18n="optsometimes">Sometimes</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="q2" value="2" style="width: 18px; height: 18px; cursor: pointer;">
+                                <span data-i18n="optoften">Often</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Question 3 -->
+                    <div style="margin-bottom: 2.5rem;">
+                        <label class="form-label" data-i18n="q3">3) Do you have balance issues?</label>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="q3" value="0" required style="width: 18px; height: 18px; cursor: pointer;">
+                                <span data-i18n="optno">No</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="q3" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                                <span data-i18n="optsometimes">Sometimes</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="q3" value="2" style="width: 18px; height: 18px; cursor: pointer;">
+                                <span data-i18n="optoften">Often</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+                        <p data-i18n="questionnote" style="margin: 0; font-size: 0.95rem; line-height: 1.6;"></p>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 1rem;">
+                        <button type="submit" class="btn btn-primary" style="flex: 1;">
+                            ✓ Save & Continue
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-view="dashboard" style="flex: 1;">
+                            Back to Dashboard
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- SPIRAL VIEW -->
+    <div class="view" id="spiralView">
+        <div class="clinical-card">
+            <div class="test-header">
+                <h2>🌀 Spiral Tremor Test</h2>
+                <p>Draw a smooth spiral using your finger</p>
+            </div>
+            <div class="card-content">
+                <div style="background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+                    <p style="margin: 0; font-size: 0.95rem; line-height: 1.6;">Use one hand. Try to draw in a single continuous stroke. Keep the device stable.</p>
+                </div>
+
+                <canvas id="spiralCanvas" style="border: 2px solid var(--border); border-radius: 12px; width: 100%; background: rgba(0,0,0,0.2); margin-bottom: 1.5rem; display: block; touch-action: none;"></canvas>
+
+                <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+                    <button id="spiralClearBtn" class="btn btn-secondary" style="flex: 1;">
+                        🗑️ Clear
+                    </button>
+                    <button id="spiralSaveBtn" class="btn btn-success" style="flex: 1;">
+                        ✓ Save Spiral
+                    </button>
+                </div>
+
+                <!-- Metrics Table -->
+                <div style="margin: 2rem 0;">
+                    <h3 style="margin-top: 0;">Spiral Analysis Metrics</h3>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border);">
+                                    <th style="text-align: left; padding: 0.75rem; color: var(--text-secondary); font-weight: 600;">Metric</th>
+                                    <th style="text-align: left; padding: 0.75rem; color: var(--text-secondary); font-weight: 600;">Value</th>
+                                    <th style="text-align: left; padding: 0.75rem; color: var(--text-secondary); font-weight: 600;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom: 1px solid var(--border);">
+                                    <td style="padding: 0.75rem; color: var(--text-secondary);">Tremor Index</td>
+                                    <td style="padding: 0.75rem; font-weight: 600;">—</td>
+                                    <td style="padding: 0.75rem;"><span class="status-badge status-pending">Pending</span></td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid var(--border);">
+                                    <td style="padding: 0.75rem; color: var(--text-secondary);">Path Length</td>
+                                    <td style="padding: 0.75rem; font-weight: 600;">—</td>
+                                    <td style="padding: 0.75rem;"><span class="status-badge status-pending">Pending</span></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; color: var(--text-secondary);">Velocity</td>
+                                    <td style="padding: 0.75rem; font-weight: 600;">—</td>
+                                    <td style="padding: 0.75rem;"><span class="status-badge status-pending">Pending</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button class="btn btn-secondary" data-view="dashboard" style="flex: 1;">
+                        Back to Dashboard
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESULTS VIEW -->
+    <div class="view" id="resultsView">
+        <div class="clinical-card">
+            <div class="test-header">
+                <h2>📊 Screening Results Summary</h2>
+                <p>Compiled metrics from all assessments</p>
+            </div>
+            <div class="card-content">
+                <div style="overflow-x: auto; margin-bottom: 2rem;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--border);">
+                                <th style="text-align: left; padding: 1rem; color: var(--text-primary); font-weight: 700; background: rgba(14, 165, 233, 0.1);">Domain</th>
+                                <th style="text-align: left; padding: 1rem; color: var(--text-primary); font-weight: 700; background: rgba(14, 165, 233, 0.1);">Status</th>
+                                <th style="text-align: left; padding: 1rem; color: var(--text-primary); font-weight: 700; background: rgba(14, 165, 233, 0.1);">Score (0-4)</th>
+                                <th style="text-align: left; padding: 1rem; color: var(--text-primary); font-weight: 700; background: rgba(14, 165, 233, 0.1);">Clinical Comment</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTableBody">
+                            <!-- Dynamically populated -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Overall Impression -->
+                <div style="background: var(--bg-glass); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; margin-bottom: 2rem;">
+                    <h3 style="margin-top: 0;">Overall Impression</h3>
+                    <div id="riskIndicator" style="font-size: 1.3rem; font-weight: 700; margin: 1rem 0;">Complete all tests to generate aggregated impression.</div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-secondary" data-view="dashboard" style="flex: 1;">
+                        Back to Dashboard
+                    </button>
+                    <button class="btn btn-primary" data-view="report" style="flex: 1;">
+                        📄 Generate Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- REPORT VIEW -->
+    <div class="view" id="reportView">
+        <div class="clinical-card">
+            <div class="test-header">
+                <h2>📄 Clinical Summary Report</h2>
+                <p>Comprehensive screening documentation</p>
+            </div>
+            <div class="card-content">
+                <div id="reportContent" style="background: var(--bg-glass); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; line-height: 1.8;">
+                    <!-- Dynamically populated -->
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <button id="downloadPdfBtn" class="btn btn-success" style="flex: 1;">
+                        ⬇️ Download PDF
+                    </button>
+                    <button id="downloadJsonBtn" class="btn btn-secondary" style="flex: 1;">
+                        ⬇️ Export JSON
+                    </button>
+                    <button class="btn btn-secondary" data-view="dashboard" style="flex: 1;">
+                        Back to Dashboard
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<!-- Scripts -->
+<script src="language.js"></script>
+<script src="mediapipe_init.js"></script>
+<script src="assessment.js"></script>
+
+</body>
+</html>
