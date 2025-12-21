@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0f0f23">
+    <title>NeuroCompass-PD | Clinical Assessment</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%230ea5e9'/><path d='M50 30v40M30 50h40' stroke='white' stroke-width='4'/></svg>">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+</head>
+<body>
+
+<!-- SPLASH SCREEN -->
+<div class="splash-screen" id="splashScreen">
+    <div class="splash-logo">🧠</div>
+    <h1 class="splash-title">NeuroCompass-PD</h1>
+    <p class="splash-subtitle">Clinical Assessment Suite v3.1</p>
+    <div class="splash-progress-container">
+        <div class="splash-progress">
+            <div class="splash-progress-bar" id="splashProgress"></div>
+        </div>
+    </div>
+</div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <!-- Left: Hamburger Menu -->
+    <button id="hamburgerMenu" class="hamburger-btn">☰</button>
+    
+    <!-- Center: App Name -->
+    <div class="navbar-center">
+        <div class="navbar-brand">
+            <span class="brand-icon">🧠</span>
+            <div>
+                <div class="brand-name">NeuroCompass-PD</div>
+                <div class="brand-version">v3.1 Clinical</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Language & Voice -->
+    <div class="navbar-right">
+        <!-- Language Selector -->
+        <select id="languageSelector" class="language-dropdown" title="Select Language">
+            <option value="en">🌐 EN</option>
+            <option value="hi">🇮🇳 HI</option>
+            <option value="ru">🇷🇺 RU</option>
+        </select>
+
+        <!-- Voice Toggle -->
+        <button id="voiceToggle" class="voice-btn" title="Toggle Voice" style="margin-left: 1rem;">🔊</button>
+    </div>
+</nav>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h2 data-i18n="navtitle">Navigation</h2>
+        <button id="closeMenu" class="close-btn">✕</button>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="nav-section">
+            <div class="section-label" data-i18n="mainmenu">Main</div>
+            <a href="#" class="nav-item active" data-view="dashboard">
+                <span>📈</span> <span data-i18n="dashboard">Dashboard</span>
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="section-label" data-i18n="learnmenu">Learn</div>
+            <a href="#" class="nav-item" data-view="info">
+                <span>ℹ️</span> <span data-i18n="pdinfo">PD Information</span>
+            </a>
+            <a href="#" class="nav-item" data-view="patient">
+                <span>👤</span> <span data-i18n="patient">Patient Profile</span>
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="section-label" data-i18n="testsmenu">Tests</div>
+            <a href="#" class="nav-item disabled" data-view="voice">
+                <span>🎤</span> <span data-i18n="speech">Speech</span>
+                <span class="badge">LOCKED</span>
+            </a>
+            <a href="#" class="nav-item disabled" data-view="tremor">
+                <span>📳</span> <span data-i18n="tremor">Tremor</span>
+                <span class="badge">LOCKED</span>
+            </a>
+            <a href="#" class="nav-item disabled" data-view="gait">
+                <span>🚶</span> <span data-i18n="gait">Gait</span>
+                <span class="badge">LOCKED</span>
+            </a>
+            <a href="#" class="nav-item disabled" data-view="facial">
+                <span>😊</span> <span data-i18n="facial">Facial</span>
+                <span class="badge">LOCKED</span>
+            </a>
+            <a href="#" class="nav-item disabled" data-view="questions">
+                <span>❓</span> <span data-i18n="questions">Questions</span>
+                <span class="badge">LOCKED</span>
+            </a>
+            <a href="#" class="nav-item disabled" data-view="spiral">
+                <span>🌀</span> <span data-i18n="spiral">Spiral</span>
+                <span class="badge">LOCKED</span>
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="section-label" data-i18n="resultsmenu">Results</div>
+            <a href="#" class="nav-item disabled" data-view="results">
+                <span>📊</span> <span data-i18n="results">Results</span>
+            </a>
+            <a href="#" class="nav-item disabled" data-view="report">
+                <span>📄</span> <span data-i18n="report">Report</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="sidebar-footer">
+        <p><strong>Created by</strong></p>
+        <p>Aradhya Chavan</p>
+        <p><strong>Email:</strong></p>
+        <p><a href="mailto:aradhyachavan2@gmail.com">aradhyachavan2@gmail.com</a></p>
+    </div>
+</div>
+
+<!-- OVERLAY (for sidebar) -->
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+<!-- MAIN CONTENT -->
+<main class="main-content">
+
+    <!-- DASHBOARD VIEW -->
+    <div class="view active" id="dashboardView" data-view="dashboard">
+        <div class="card">
+            <h2 data-i18n="dashboard">Dashboard</h2>
+            <div class="dashboard-grid">
+                <div class="dashboard-box">
+                    <div class="box-icon">👤</div>
+                    <h3 data-i18n="patientprofile">Patient Profile</h3>
+                    <p id="patientStatusText" data-i18n="statusrequired">Required</p>
+                    <button class="btn btn-primary" onclick="showView('patient')" data-i18n="complete">Complete</button>
+                </div>
+
+                <div class="dashboard-box">
+                    <div class="box-icon">🔬</div>
+                    <h3 data-i18n="tests">Screening Tests</h3>
+                    <p id="testCount">0/6</p>
+                    <button class="btn btn-secondary" id="testsBtn" onclick="showView('voice')" data-i18n="starttests">Start Tests</button>
+                </div>
+
+                <div class="dashboard-box">
+                    <div class="box-icon">📊</div>
+                    <h3 data-i18n="analytics">Analytics</h3>
+                    <p data-i18n="radarvisual">Radar Chart</p>
+                    <button class="btn btn-secondary" onclick="showView('report')" disabled id="reportBtn" data-i18n="viewreport">View Report</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PD INFO VIEW -->
+    <div class="view" id="infoView" data-view="info">
+        <div class="card">
+            <h2 data-i18n="pdinfo">Parkinson's Disease Information</h2>
+            <div class="info-box">
+                <h3 data-i18n="whatispd">What is Parkinson's?</h3>
+                <p data-i18n="pdexplanation">A progressive neurodegenerative disorder characterized by motor symptoms including tremor, bradykinesia (slowness), rigidity, and postural instability.</p>
+            </div>
+            <div class="info-box">
+                <h3 data-i18n="updrs">MDS-UPDRS Assessment</h3>
+                <p data-i18n="updrsexplanation">Unified Parkinson's Disease Rating Scale for motor examination and symptom assessment.</p>
+            </div>
+            <button class="btn btn-primary btn-block" onclick="showView('patient')" data-i18n="continue">Continue</button>
+        </div>
+    </div>
+
+    <!-- PATIENT FORM VIEW -->
+    <div class="view" id="patientView" data-view="patient">
+        <div class="card">
+            <h2 data-i18n="patientinfo">Patient Information</h2>
+            <form id="patientForm" onsubmit="savePatient(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label data-i18n="firstname">First Name</label>
+                        <input type="text" id="firstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="lastname">Last Name</label>
+                        <input type="text" id="lastName" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label data-i18n="dob">Date of Birth</label>
+                        <input type="date" id="dob" required onchange="validateAge()">
+                        <span id="ageError" style="color: red; display: none;" data-i18n="age18required">Must be 18+</span>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="gender">Gender</label>
+                        <select id="gender" required>
+                            <option value="">Select</option>
+                            <option value="M" data-i18n="male">Male</option>
+                            <option value="F" data-i18n="female">Female</option>
+                            <option value="O" data-i18n="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label data-i18n="country">Country Code</label>
+                        <select id="countryCode" required>
+                            <option value="">Select Country</option>
+                            <option value="+1">🇺🇸 +1 USA</option>
+                            <option value="+44">🇬🇧 +44 UK</option>
+                            <option value="+91">🇮🇳 +91 India</option>
+                            <option value="+7">🇷🇺 +7 Russia</option>
+                            <option value="+86">🇨🇳 +86 China</option>
+                            <option value="+81">🇯🇵 +81 Japan</option>
+                            <option value="+49">🇩🇪 +49 Germany</option>
+                            <option value="+33">🇫🇷 +33 France</option>
+                            <option value="+39">🇮🇹 +39 Italy</option>
+                            <option value="+34">🇪🇸 +34 Spain</option>
+                            <option value="+55">🇧🇷 +55 Brazil</option>
+                            <option value="+61">🇦🇺 +61 Australia</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="phone">Phone</label>
+                        <input type="tel" id="phone" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label data-i18n="email">Email</label>
+                        <input type="email" id="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="medicalid">Medical ID</label>
+                        <input type="text" id="medicalId">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-success btn-block" data-i18n="unlockscreening">Save & Unlock Screening</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- VOICE TEST VIEW -->
+    <div class="view" id="voiceView" data-view="voice">
+        <div class="card">
+            <h2>🎤 <span data-i18n="speech">Speech Assessment</span></h2>
+            <p data-i18n="voiceinstruction">Say "AAAAA" for 6 seconds steadily</p>
+
+            <div id="voiceContainer">
+                <div id="voiceCountdown" class="countdown-container" style="display: none;">
+                    <div data-i18n="startingin">Starting in</div>
+                    <div class="timer-display" id="voiceCountdownTimer">3</div>
+                </div>
+
+                <div id="voiceRecording" style="display: none;">
+                    <div class="waveform-animation">
+                        <svg viewBox="0 0 100 40" class="waveform-svg">
+                            <circle cx="15" cy="20" r="2" class="wave-dot" style="animation-delay: 0s;"></circle>
+                            <circle cx="25" cy="20" r="2" class="wave-dot" style="animation-delay: 0.1s;"></circle>
+                            <circle cx="35" cy="20" r="2" class="wave-dot" style="animation-delay: 0.2s;"></circle>
+                            <circle cx="45" cy="20" r="2" class="wave-dot" style="animation-delay: 0.3s;"></circle>
+                            <circle cx="55" cy="20" r="2" class="wave-dot" style="animation-delay: 0.4s;"></circle>
+                            <circle cx="65" cy="20" r="2" class="wave-dot" style="animation-delay: 0.5s;"></circle>
+                            <circle cx="75" cy="20" r="2" class="wave-dot" style="animation-delay: 0.6s;"></circle>
+                            <circle cx="85" cy="20" r="2" class="wave-dot" style="animation-delay: 0.7s;"></circle>
+                        </svg>
+                        <div class="timer-display" id="voiceRecordingTimer">6</div>
+                    </div>
+                </div>
+
+                <div id="voiceButtons" class="voice-buttons">
+                    <button id="voiceStartBtn" class="btn btn-primary btn-large" onclick="startVoiceRecording()" data-i18n="recordtrial">🎤 Start Recording</button>
+                    <button id="voiceNextBtn" class="btn btn-success" onclick="nextVoiceTrial()" style="display: none;" data-i18n="nexttrail">✓ Next Trial</button>
+                </div>
+
+                <div id="voiceMetrics" style="margin-top: 2rem; display: none;">
+                    <h3 data-i18n="metrics">Metrics</h3>
+                    <table class="metrics-table">
+                        <tr>
+                            <td data-i18n="jitter">Jitter</td>
+                            <td><strong id="jitterVal">—</strong></td>
+                        </tr>
+                        <tr>
+                            <td data-i18n="shimmer">Shimmer</td>
+                            <td><strong id="shimmerVal">—</strong></td>
+                        </tr>
+                        <tr>
+                            <td data-i18n="hnr">HNR</td>
+                            <td><strong id="hnrVal">—</strong></td>
+                        </tr>
+                        <tr>
+                            <td data-i18n="f0">F0</td>
+                            <td><strong id="f0Val">—</strong></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div style="margin-top: 2rem; text-align: center;" id="voiceProgress">
+                    <div class="trial-indicator">
+                        <span id="trial1Indicator" class="trial-dot">1</span>
+                        <span id="trial2Indicator" class="trial-dot">2</span>
+                        <span id="trial3Indicator" class="trial-dot">3</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                <button id="voiceCompleteBtn" class="btn btn-success" onclick="completeVoiceTest()" style="flex: 1; display: none;" data-i18n="completetest">✓ Complete Test</button>
+                <button class="btn btn-secondary" onclick="showView('dashboard')" style="flex: 1;" data-i18n="cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TREMOR TEST VIEW -->
+    <div class="view" id="tremorView" data-view="tremor">
+        <div class="card">
+            <h2>📳 <span data-i18n="tremor">Tremor Assessment</span></h2>
+            <p data-i18n="tremorinstructions">Record tremor from both hands (10 seconds each)</p>
+
+            <div id="tremorContainer">
+                <div id="tremorHandSelect" style="text-align: center; margin: 3rem 0;">
+                    <div style="font-size: 3rem; margin-bottom: 2rem;">👈 <span data-i18n="selecthand">Select Hand</span> 👉</div>
+                    <div style="display: flex; gap: 2rem; justify-content: center; margin-bottom: 2rem;">
+                        <button class="btn btn-primary btn-large" onclick="selectTremorHand('left')" data-i18n="lefthand">👈 Left Hand</button>
+                        <button class="btn btn-primary btn-large" onclick="selectTremorHand('right')" data-i18n="righthand">Right Hand 👉</button>
+                    </div>
+                </div>
+
+                <div id="tremorCountdown" class="countdown-container" style="display: none;">
+                    <div data-i18n="startingin">Starting in</div>
+                    <div class="timer-display" id="tremorCountdownTimer">3</div>
+                </div>
+
+                <div id="tremorRecording" style="display: none; text-align: center;">
+                    <div class="waveform-animation" style="margin-bottom: 2rem;">
+                        <div style="font-size: 2rem; margin-bottom: 1rem;" id="tremorHandDisplay">👋</div>
+                        <svg viewBox="0 0 100 40" class="waveform-svg">
+                            <circle cx="15" cy="20" r="2" class="wave-dot" style="animation-delay: 0s;"></circle>
+                            <circle cx="25" cy="20" r="2" class="wave-dot" style="animation-delay: 0.1s;"></circle>
+                            <circle cx="35" cy="20" r="2" class="wave-dot" style="animation-delay: 0.2s;"></circle>
+                            <circle cx="45" cy="20" r="2" class="wave-dot" style="animation-delay: 0.3s;"></circle>
+                            <circle cx="55" cy="20" r="2" class="wave-dot" style="animation-delay: 0.4s;"></circle>
+                            <circle cx="65" cy="20" r="2" class="wave-dot" style="animation-delay: 0.5s;"></circle>
+                            <circle cx="75" cy="20" r="2" class="wave-dot" style="animation-delay: 0.6s;"></circle>
+                            <circle cx="85" cy="20" r="2" class="wave-dot" style="animation-delay: 0.7s;"></circle>
+                        </svg>
+                        <div class="timer-display" id="tremorRecordingTimer">10</div>
+                    </div>
+                </div>
+
+                <div id="tremorMetrics" style="margin-top: 2rem; display: none;">
+                    <h3 data-i18n="metrics">Metrics</h3>
+                    <table class="metrics-table">
+                        <tr>
+                            <td data-i18n="frequency">Frequency</td>
+                            <td><strong id="freqVal">—</strong></td>
+                        </tr>
+                        <tr>
+                            <td data-i18n="amplitude">Amplitude</td>
+                            <td><strong id="ampVal">—</strong></td>
+                        </tr>
+                        <tr>
+                            <td data-i18n="power">Power</td>
+                            <td><strong id="powVal">—</strong></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div style="margin-top: 2rem; text-align: center;" id="tremorProgress">
+                    <div class="trial-indicator">
+                        <span id="tremorLeftIndicator" class="trial-dot">L</span>
+                        <span id="tremorRightIndicator" class="trial-dot">R</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                <button id="tremorCompleteBtn" class="btn btn-success" onclick="completeTremorTest()" style="flex: 1; display: none;" data-i18n="completetest">✓ Complete Test</button>
+                <button class="btn btn-secondary" onclick="showView('dashboard')" style="flex: 1;" data-i18n="cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GAIT TEST VIEW -->
+    <div class="view" id="gaitView" data-view="gait">
+        <div class="card">
+            <h2>🚶 <span data-i18n="gait">Gait Assessment</span></h2>
+            <p data-i18n="gaitinstruction">Walk naturally for 15 seconds while camera records</p>
+
+            <div id="gaitCountdown" class="countdown-container" style="display: none;">
+                <div data-i18n="startingin">Starting in</div>
+                <div class="timer-display" id="gaitCountdownTimer">3</div>
+            </div>
+
+            <div id="gaitButton" style="text-align: center; margin: 3rem 0;">
+                <button class="btn btn-primary btn-large" onclick="startGaitTest()" data-i18n="startgait">🎥 Start Gait Recording</button>
+            </div>
+
+            <div id="gaitRecording" style="display: none; text-align: center;">
+                <div class="waveform-animation" style="margin-bottom: 2rem;">
+                    <svg viewBox="0 0 100 40" class="waveform-svg">
+                        <circle cx="15" cy="20" r="2" class="wave-dot" style="animation-delay: 0s;"></circle>
+                        <circle cx="25" cy="20" r="2" class="wave-dot" style="animation-delay: 0.1s;"></circle>
+                        <circle cx="35" cy="20" r="2" class="wave-dot" style="animation-delay: 0.2s;"></circle>
+                        <circle cx="45" cy="20" r="2" class="wave-dot" style="animation-delay: 0.3s;"></circle>
+                        <circle cx="55" cy="20" r="2" class="wave-dot" style="animation-delay: 0.4s;"></circle>
+                        <circle cx="65" cy="20" r="2" class="wave-dot" style="animation-delay: 0.5s;"></circle>
+                        <circle cx="75" cy="20" r="2" class="wave-dot" style="animation-delay: 0.6s;"></circle>
+                        <circle cx="85" cy="20" r="2" class="wave-dot" style="animation-delay: 0.7s;"></circle>
+                    </svg>
+                    <div class="timer-display" id="gaitRecordingTimer">15</div>
+                </div>
+            </div>
+
+            <div id="gaitMetrics" style="margin-top: 2rem; display: none;">
+                <h3 data-i18n="metrics">Metrics</h3>
+                <table class="metrics-table">
+                    <tr>
+                        <td data-i18n="cadence">Cadence</td>
+                        <td><strong id="cadVal">—</strong></td>
+                    </tr>
+                    <tr>
+                        <td data-i18n="stridelength">Stride Length</td>
+                        <td><strong id="strVal">—</strong></td>
+                    </tr>
+                    <tr>
+                        <td data-i18n="speed">Speed</td>
+                        <td><strong id="spdVal">—</strong></td>
+                    </tr>
+                </table>
+            </div>
+
+            <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                <button id="gaitCompleteBtn" class="btn btn-success" onclick="completeGaitTest()" style="flex: 1; display: none;" data-i18n="completetest">✓ Complete Test</button>
+                <button class="btn btn-secondary" onclick="showView('dashboard')" style="flex: 1;" data-i18n="cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FACIAL TEST VIEW -->
+    <div class="view" id="facialView" data-view="facial">
+        <div class="card">
+            <h2>😊 <span data-i18n="facial">Facial Expression</span></h2>
+            <p data-i18n="facialinstruction">Maintain natural expression for 10 seconds while camera records</p>
+
+            <div id="facialCountdown" class="countdown-container" style="display: none;">
+                <div data-i18n="startingin">Starting in</div>
+                <div class="timer-display" id="facialCountdownTimer">3</div>
+            </div>
+
+            <div id="facialButton" style="text-align: center; margin: 3rem 0;">
+                <button class="btn btn-primary btn-large" onclick="startFacialTest()" data-i18n="startfacial">📱 Start Facial Recording</button>
+            </div>
+
+            <div id="facialRecording" style="display: none; text-align: center;">
+                <div class="waveform-animation" style="margin-bottom: 2rem;">
+                    <svg viewBox="0 0 100 40" class="waveform-svg">
+                        <circle cx="15" cy="20" r="2" class="wave-dot" style="animation-delay: 0s;"></circle>
+                        <circle cx="25" cy="20" r="2" class="wave-dot" style="animation-delay: 0.1s;"></circle>
+                        <circle cx="35" cy="20" r="2" class="wave-dot" style="animation-delay: 0.2s;"></circle>
+                        <circle cx="45" cy="20" r="2" class="wave-dot" style="animation-delay: 0.3s;"></circle>
+                        <circle cx="55" cy="20" r="2" class="wave-dot" style="animation-delay: 0.4s;"></circle>
+                        <circle cx="65" cy="20" r="2" class="wave-dot" style="animation-delay: 0.5s;"></circle>
+                        <circle cx="75" cy="20" r="2" class="wave-dot" style="animation-delay: 0.6s;"></circle>
+                        <circle cx="85" cy="20" r="2" class="wave-dot" style="animation-delay: 0.7s;"></circle>
+                    </svg>
+                    <div class="timer-display" id="facialRecordingTimer">10</div>
+                </div>
+            </div>
+
+            <div id="facialMetrics" style="margin-top: 2rem; display: none;">
+                <h3 data-i18n="metrics">Metrics</h3>
+                <table class="metrics-table">
+                    <tr>
+                        <td data-i18n="blinkrate">Blink Rate</td>
+                        <td><strong id="blkVal">—</strong></td>
+                    </tr>
+                    <tr>
+                        <td data-i18n="jawopening">Jaw Opening</td>
+                        <td><strong id="jawVal">—</strong></td>
+                    </tr>
+                    <tr>
+                        <td data-i18n="mouthwidth">Mouth Width</td>
+                        <td><strong id="mthVal">—</strong></td>
+                    </tr>
+                </table>
+            </div>
+
+            <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                <button id="facialCompleteBtn" class="btn btn-success" onclick="completeFacialTest()" style="flex: 1; display: none;" data-i18n="completetest">✓ Complete Test</button>
+                <button class="btn btn-secondary" onclick="showView('dashboard')" style="flex: 1;" data-i18n="cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUESTIONS VIEW -->
+    <div class="view" id="questionsView" data-view="questions">
+        <div class="card">
+            <h2>❓ <span data-i18n="questions">Questions</span></h2>
+            <form id="questionsForm" onsubmit="submitQuestions(event)">
+                <div class="question-item">
+                    <label data-i18n="q1">Do you experience slowness of movement?</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="q1" value="0"> <span data-i18n="no">No</span></label>
+                        <label><input type="radio" name="q1" value="1"> <span data-i18n="sometimes">Sometimes</span></label>
+                        <label><input type="radio" name="q1" value="2"> <span data-i18n="often">Often</span></label>
+                    </div>
+                </div>
+
+                <div class="question-item">
+                    <label data-i18n="q2">Do you experience stiffness or rigidity?</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="q2" value="0"> <span data-i18n="no">No</span></label>
+                        <label><input type="radio" name="q2" value="1"> <span data-i18n="sometimes">Sometimes</span></label>
+                        <label><input type="radio" name="q2" value="2"> <span data-i18n="often">Often</span></label>
+                    </div>
+                </div>
+
+                <div class="question-item">
+                    <label data-i18n="q3">Do you experience balance issues?</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="q3" value="0"> <span data-i18n="no">No</span></label>
+                        <label><input type="radio" name="q3" value="1"> <span data-i18n="sometimes">Sometimes</span></label>
+                        <label><input type="radio" name="q3" value="2"> <span data-i18n="often">Often</span></label>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="btn btn-success" style="flex: 1;" data-i18n="completetest">✓ Complete Test</button>
+                    <button type="button" class="btn btn-secondary" onclick="showView('dashboard')" style="flex: 1;" data-i18n="cancel">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SPIRAL TEST VIEW -->
+    <div class="view" id="spiralView" data-view="spiral">
+        <div class="card">
+            <h2>🌀 <span data-i18n="spiral">Spiral Drawing Test</span></h2>
+            <p data-i18n="spiralinstructions">Draw a smooth spiral. Start from center and spiral outward</p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                <div>
+                    <h3 data-i18n="reference">Reference Spiral</h3>
+                    <canvas id="referenceSpiral" width="200" height="200" style="border: 2px solid #0ea5e9; border-radius: 8px; background: rgba(0,0,0,0.2);"></canvas>
+                </div>
+
+                <div>
+                    <h3 data-i18n="yourspiral">Your Drawing</h3>
+                    <canvas id="spiralCanvas" width="200" height="200" style="border: 2px solid #10b981; border-radius: 8px; background: rgba(0,0,0,0.2); touch-action: none; cursor: crosshair;"></canvas>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+                <button class="btn btn-secondary" onclick="clearSpiral()" style="flex: 1;" data-i18n="clear">Clear</button>
+                <button id="spiralCompleteBtn" class="btn btn-success" onclick="completeSpiral Test()" style="flex: 1;" data-i18n="completetest">✓ Complete Test</button>
+            </div>
+
+            <div id="spiralMetrics" style="margin-top: 2rem;">
+                <h3 data-i18n="metrics">Metrics</h3>
+                <table class="metrics-table">
+                    <tr>
+                        <td data-i18n="tremorindex">Tremor Index</td>
+                        <td><strong id="treIdxVal">—</strong></td>
+                    </tr>
+                    <tr>
+                        <td data-i18n="pathlen">Path Length</td>
+                        <td><strong id="pathVal">—</strong></td>
+                    </tr>
+                    <tr>
+                        <td data-i18n="velocity">Velocity</td>
+                        <td><strong id="velVal">—</strong></td>
+                    </tr>
+                </table>
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button class="btn btn-secondary" onclick="showView('dashboard')" style="flex: 1;" data-i18n="cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESULTS VIEW -->
+    <div class="view" id="resultsView" data-view="results">
+        <div class="card">
+            <h2>📊 <span data-i18n="results">Results</span></h2>
+            <table class="results-table" id="resultsTable">
+                <tr>
+                    <th data-i18n="test">Test</th>
+                    <th data-i18n="status">Status</th>
+                    <th data-i18n="score">Score</th>
+                </tr>
+                <tr>
+                    <td>🎤 <span data-i18n="speech">Speech</span></td>
+                    <td id="voiceStatus">❌ Pending</td>
+                    <td id="voiceScore">—</td>
+                </tr>
+                <tr>
+                    <td>📳 <span data-i18n="tremor">Tremor</span></td>
+                    <td id="tremorStatus">❌ Pending</td>
+                    <td id="tremorScore">—</td>
+                </tr>
+                <tr>
+                    <td>🚶 <span data-i18n="gait">Gait</span></td>
+                    <td id="gaitStatus">❌ Pending</td>
+                    <td id="gaitScore">—</td>
+                </tr>
+                <tr>
+                    <td>😊 <span data-i18n="facial">Facial</span></td>
+                    <td id="facialStatus">❌ Pending</td>
+                    <td id="facialScore">—</td>
+                </tr>
+                <tr>
+                    <td>❓ <span data-i18n="questions">Questions</span></td>
+                    <td id="questionsStatus">❌ Pending</td>
+                    <td id="questionsScore">—</td>
+                </tr>
+                <tr>
+                    <td>🌀 <span data-i18n="spiral">Spiral</span></td>
+                    <td id="spiralStatus">❌ Pending</td>
+                    <td id="spiralScore">—</td>
+                </tr>
+            </table>
+
+            <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                <button class="btn btn-primary" onclick="showView('report')" style="flex: 1;" data-i18n="generatereport">Generate Report</button>
+                <button class="btn btn-secondary" onclick="showView('dashboard')" style="flex: 1;" data-i18n="backtodash">Back</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- REPORT VIEW -->
+    <div class="view" id="reportView" data-view="report">
+        <div class="card">
+            <h2>📄 <span data-i18n="report">Clinical Report</span></h2>
+
+            <div id="reportContent" style="margin-bottom: 2rem;">
+                <div class="report-section">
+                    <h3 data-i18n="radarvisualization">Domain Analysis</h3>
+                    <canvas id="radarChart"></canvas>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-success" onclick="downloadPDF()" style="flex: 1;" data-i18n="downloadpdf">⬇️ Download PDF</button>
+                <button class="btn btn-secondary" onclick="showView('dashboard')" style="flex: 1;" data-i18n="backtodash">Back</button>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<!-- Scripts -->
+<script src="language.js"></script>
+<script src="assessment.js"></script>
+
+</body>
+</html>
