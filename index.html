@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroCompass-PD v4.3 | Clinical Assessment Suite</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- ✅ CRITICAL FIX: Removed async attribute to ensure MediaPipe loads before assessment.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.4.1633559619/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.4.1633559619/pose.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js"></script>
+</head>
+<body>
+    <!-- SPLASH SCREEN -->
+    <div id="splashScreen" class="splash-screen">
+        <div class="splash-content">
+            <div class="splash-glass">
+                <span class="splash-emoji-main">🧠</span>
+                <h1 class="splash-title">NeuroCompass</h1>
+                <p class="splash-subtitle" data-i18n="splash_subtitle">🩺 Digital Assessment Suite</p>
+                
+                <div class="progress-container">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+
+                <p class="splash-status" id="splashStatus" data-i18n="splash_msg1">Loading sensors...</p>
+
+                <div class="splash-dots">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+
+                <button class="splash-voice-btn" id="splashVoiceBtn" title="Enable voice assistance">
+                    <span data-i18n="splash_voice">🔊 Voice</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HEADER -->
+    <header class="header glass-effect">
+        <div class="header-left">
+            <button class="menu-btn" id="menuToggle" title="Menu">☰</button>
+            <span class="logo">🧠 NeuroCompass</span>
+        </div>
+        <div class="header-right">
+            <button class="voice-btn" id="voiceBtn" title="Toggle voice assistant">🔊</button>
+            <select id="topLanguageSelect" class="language-select" title="Select language">
+                <option value="en">🇺🇸 English</option>
+                <option value="hi">🇮🇳 हिन्दी</option>
+                <option value="ru">🇷🇺 Русский</option>
+            </select>
+        </div>
+    </header>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <aside class="sidebar glass-effect" id="sidebar">
+        <div class="sidebar-header">
+            <h2 data-i18n="sidebar_title">Menu</h2>
+            <button class="close-btn" id="sidebarBack">✕</button>
+        </div>
+        <nav class="sidebar-nav">
+            <a class="nav-item active" data-view="dashboard" href="#dashboard">
+                <span data-i18n="nav_dashboard">🏠 Dashboard</span>
+            </a>
+            <a class="nav-item" data-view="patient" href="#patient">
+                <span data-i18n="nav_patient">👤 Patient Profile</span>
+            </a>
+            <a class="nav-item" data-view="voice" href="#voice">
+                <span data-i18n="nav_voice">🎤 Speech</span>
+            </a>
+            <a class="nav-item" data-view="tremor" href="#tremor">
+                <span data-i18n="nav_tremor">📱 Tremor</span>
+            </a>
+            <a class="nav-item" data-view="gait" href="#gait">
+                <span data-i18n="nav_gait">🚶 Gait</span>
+            </a>
+            <a class="nav-item" data-view="facial" href="#facial">
+                <span data-i18n="nav_facial">😊 Facial</span>
+            </a>
+            <a class="nav-item" data-view="questions" href="#questions">
+                <span data-i18n="nav_questions">❓ Questions</span>
+            </a>
+            <a class="nav-item" data-view="spiral" href="#spiral">
+                <span data-i18n="nav_spiral">✏️ Spiral</span>
+            </a>
+            <a class="nav-item" data-view="results" href="#results">
+                <span data-i18n="nav_results">📊 Results</span>
+            </a>
+            <a class="nav-item" data-view="report" href="#report">
+                <span data-i18n="nav_report">📄 Report</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <p>NeuroCompass-PD v4.3</p>
+            <p data-i18n="sidebar_footer">Production Ready</p>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <!-- DASHBOARD VIEW -->
+        <div id="dashboardView" class="view active">
+            <div class="card">
+                <h2 data-i18n="dash_title">🧠 Dashboard</h2>
+                <p data-i18n="dash_subtitle">Select an assessment to begin</p>
+                
+                <div id="patientProfileBox" class="dashboard-box glass-effect">
+                    <span class="box-icon">👤</span>
+                    <h3 data-i18n="create_profile">Create Patient Profile</h3>
+                    <p data-i18n="create_profile_desc">Enter patient information to unlock assessments</p>
+                    <button class="btn btn-primary" onclick="navigateTo('patient')" data-i18n="btn_start">Get Started</button>
+                </div>
+
+                <div class="dashboard-grid" id="assessmentGrid">
+                    <div class="dashboard-box glass-effect" onclick="navigateTo('voice')">
+                        <span class="box-icon">🎤</span>
+                        <h3 data-i18n="voice_title">Speech Assessment</h3>
+                        <p data-i18n="voice_desc">Record voice samples</p>
+                        <button class="btn btn-secondary" data-i18n="btn_start">Start</button>
+                    </div>
+
+                    <div class="dashboard-box glass-effect" onclick="navigateTo('tremor')">
+                        <span class="box-icon">📱</span>
+                        <h3 data-i18n="tremor_title">Tremor Assessment</h3>
+                        <p data-i18n="tremor_desc">Measure hand tremor</p>
+                        <button class="btn btn-secondary" data-i18n="btn_start">Start</button>
+                    </div>
+
+                    <div class="dashboard-box glass-effect" onclick="navigateTo('gait')">
+                        <span class="box-icon">🚶</span>
+                        <h3 data-i18n="gait_title">Gait Assessment</h3>
+                        <p data-i18n="gait_desc">Analyze walking pattern</p>
+                        <button class="btn btn-secondary" data-i18n="btn_start">Start</button>
+                    </div>
+
+                    <div class="dashboard-box glass-effect" onclick="navigateTo('facial')">
+                        <span class="box-icon">😊</span>
+                        <h3 data-i18n="facial_title">Facial Assessment</h3>
+                        <p data-i18n="facial_desc">Monitor facial expressions</p>
+                        <button class="btn btn-secondary" data-i18n="btn_start">Start</button>
+                    </div>
+
+                    <div class="dashboard-box glass-effect" onclick="navigateTo('questions')">
+                        <span class="box-icon">❓</span>
+                        <h3 data-i18n="questions_title">Symptom Questions</h3>
+                        <p data-i18n="questions_desc">Answer screening questions</p>
+                        <button class="btn btn-secondary" data-i18n="btn_start">Start</button>
+                    </div>
+
+                    <div class="dashboard-box glass-effect" onclick="navigateTo('spiral')">
+                        <span class="box-icon">✏️</span>
+                        <h3 data-i18n="spiral_title">Spiral Drawing</h3>
+                        <p data-i18n="spiral_desc">Draw spiral to assess tremor</p>
+                        <button class="btn btn-secondary" data-i18n="btn_start">Start</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PATIENT PROFILE VIEW -->
+        <div id="patientView" class="view">
+            <div class="card">
+                <h2 data-i18n="patient_title">👤 Patient Profile</h2>
+                <form id="patientForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label data-i18n="label_firstName">First Name</label>
+                            <input type="text" id="firstName" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="label_lastName">Last Name</label>
+                            <input type="text" id="lastName" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="label_dob">Date of Birth</label>
+                            <input type="date" id="dateOfBirth" class="form-control" required>
+                            <small id="ageError" style="display: none; color: #ef4444;" data-i18n="error_age">⚠️ Must be 18 or older</small>
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="label_gender">Gender</label>
+                            <select id="gender" class="form-control" required>
+                                <option value="">Select Gender</option>
+                                <option value="M" data-i18n="opt_male">Male</option>
+                                <option value="F" data-i18n="opt_female">Female</option>
+                                <option value="O" data-i18n="opt_other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="label_country">Country</label>
+                            <select id="country" class="form-control" required>
+                                <option value="">Select Country</option>
+                                <option value="IN">🇮🇳 India (+91)</option>
+                                <option value="KG">🇰🇬 Kyrgyzstan (+996)</option>
+                                <option value="US">🇺🇸 USA (+1)</option>
+                                <option value="GB">🇬🇧 UK (+44)</option>
+                                <option value="RU">🇷🇺 Russia (+7)</option>
+                                <option value="DE">🇩🇪 Germany (+49)</option>
+                                <option value="FR">🇫🇷 France (+33)</option>
+                                <option value="JP">🇯🇵 Japan (+81)</option>
+                                <option value="AU">🇦🇺 Australia (+61)</option>
+                                <option value="CA">🇨🇦 Canada (+1)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="label_phone">Phone Number</label>
+                            <div class="phone-group">
+                                <span id="phoneCountryCode">+91</span>
+                                <input type="tel" id="phone" class="form-control" inputmode="numeric" placeholder="9876543210" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="label_email">Email</label>
+                            <input type="email" id="email" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="label_contact">Emergency Contact</label>
+                            <input type="text" id="emergencyContact" class="form-control">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary large full-width" data-i18n="btn_save">💾 Save Profile</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- VOICE ASSESSMENT VIEW -->
+        <div id="voiceView" class="view">
+            <div class="card">
+                <h2 data-i18n="voice_title">🎤 Speech Assessment</h2>
+                <p data-i18n="voice_instruction">Say "AAAAA" continuously for each trial</p>
+                <div class="test-container">
+                    <p class="trial-text" data-i18n="trial_info">Trial <span id="voiceTrial">1/3</span></p>
+                    <canvas id="voiceWaveform" class="waveform-canvas"></canvas>
+                    <div id="voiceMetrics" style="display: none;"></div>
+                    <div class="button-group">
+                        <button id="voiceRecordBtn" class="btn btn-primary" data-i18n="btn_record">🎤 Record</button>
+                        <button id="voiceStopBtn" class="btn btn-danger" style="display: none;" data-i18n="btn_stop">⏹ Stop</button>
+                        <button id="voicePlayBtn" class="btn btn-secondary" style="display: none;" data-i18n="btn_play">▶ Play</button>
+                        <button id="voiceCompleteBtn" class="btn btn-success" style="display: none;" data-i18n="btn_complete">✅ Complete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TREMOR ASSESSMENT VIEW -->
+        <div id="tremorView" class="view">
+            <div class="card">
+                <h2 data-i18n="tremor_title">📱 Tremor Assessment</h2>
+                <p data-i18n="tremor_instruction">Hold phone steady for 10 seconds</p>
+                <div class="test-container">
+                    <div class="tremor-animation" id="tremorAnimation"></div>
+                    <div id="tremorCountdown" style="display: none;">
+                        <div class="countdown-text" id="tremorCountdownValue">10</div>
+                        <p data-i18n="tremor_countdown">Measuring tremor...</p>
+                    </div>
+                    <div id="tremorMetrics" style="display: none;"></div>
+                    <div class="button-group">
+                        <button class="btn btn-primary" onclick="requestTremorPermission('left')" data-i18n="btn_left_hand">👈 Left Hand</button>
+                        <button class="btn btn-primary" onclick="requestTremorPermission('right')" data-i18n="btn_right_hand">👉 Right Hand</button>
+                        <button class="btn btn-success" onclick="completeTremor()" style="display: none;" id="tremorCompleteBtn" data-i18n="btn_complete">✅ Complete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GAIT ASSESSMENT VIEW -->
+        <div id="gaitView" class="view">
+            <div class="card">
+                <h2 data-i18n="gait_title">🚶 Gait Assessment</h2>
+                <p data-i18n="gait_instruction">Walk naturally in front of camera</p>
+                <div class="test-container">
+                    <div class="camera-container">
+                        <video id="gaitVideo" class="camera-canvas" playsinline autoplay muted></video>
+                        <canvas id="gaitCanvas" class="camera-canvas" style="display: none;"></canvas>
+                        <div id="gaitCameraError" class="camera-error hidden" data-i18n="alert_camera_denied">
+                            📷 Please enable camera permissions
+                        </div>
+                        <button class="btn btn-secondary camera-btn" id="gaitFlipBtn" style="display: none;" data-i18n="btn_flip">📷 Flip</button>
+                    </div>
+                    <div id="gaitCountdown" style="display: none;">
+                        <div class="countdown-text" id="gaitCountdownValue">10</div>
+                        <p data-i18n="gait_countdown">Recording gait...</p>
+                    </div>
+                    <div id="gaitMetrics" style="display: none;"></div>
+                    <div class="button-group">
+                        <button id="gaitStartBtn" class="btn btn-primary" data-i18n="btn_start_gait">🚶 Start</button>
+                        <button id="gaitStopBtn" class="btn btn-danger" style="display: none;" data-i18n="btn_stop">⏹ Stop</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FACIAL ASSESSMENT VIEW -->
+        <div id="facialView" class="view">
+            <div class="card">
+                <h2 data-i18n="facial_title">😊 Facial Assessment</h2>
+                <p data-i18n="facial_instruction">Look at camera naturally for 10 seconds</p>
+                <div class="test-container">
+                    <div class="camera-container">
+                        <video id="facialVideo" class="camera-canvas" playsinline autoplay muted></video>
+                        <canvas id="facialCanvas" class="camera-canvas" style="display: none;"></canvas>
+                        <div id="facialCameraError" class="camera-error hidden" data-i18n="alert_camera_denied">
+                            📷 Please enable camera permissions
+                        </div>
+                        <button class="btn btn-secondary camera-btn" id="facialFlipBtn" style="display: none;" data-i18n="btn_flip">📷 Flip</button>
+                    </div>
+                    <div id="facialCountdown" style="display: none;">
+                        <div class="countdown-text" id="facialCountdownValue">10</div>
+                        <p data-i18n="facial_countdown">Recording facial...</p>
+                    </div>
+                    <div id="facialMetrics" style="display: none;"></div>
+                    <div class="button-group">
+                        <button id="facialStartBtn" class="btn btn-primary" data-i18n="btn_start_facial">😊 Start</button>
+                        <button id="facialStopBtn" class="btn btn-danger" style="display: none;" data-i18n="btn_stop">⏹ Stop</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- QUESTIONS VIEW -->
+        <div id="questionsView" class="view">
+            <div class="card">
+                <h2 data-i18n="questions_title">❓ Symptom Questions</h2>
+                <form id="questionsForm">
+                    <div class="form-grid" style="grid-template-columns: 1fr;">
+                        <div class="form-group">
+                            <label data-i18n="q1_text">Do you experience slowness?</label>
+                            <select class="form-control question-answer" required>
+                                <option value="">Select</option>
+                                <option value="0" data-i18n="opt_no">No</option>
+                                <option value="1" data-i18n="opt_sometimes">Sometimes</option>
+                                <option value="2" data-i18n="opt_often">Often</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="q2_text">Do you have stiffness?</label>
+                            <select class="form-control question-answer" required>
+                                <option value="">Select</option>
+                                <option value="0" data-i18n="opt_no">No</option>
+                                <option value="1" data-i18n="opt_sometimes">Sometimes</option>
+                                <option value="2" data-i18n="opt_often">Often</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="q3_text">Do you have balance issues?</label>
+                            <select class="form-control question-answer" required>
+                                <option value="">Select</option>
+                                <option value="0" data-i18n="opt_no">No</option>
+                                <option value="1" data-i18n="opt_sometimes">Sometimes</option>
+                                <option value="2" data-i18n="opt_often">Often</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary large full-width" data-i18n="btn_save">💾 Save</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- SPIRAL VIEW -->
+        <div id="spiralView" class="view">
+            <div class="card">
+                <h2 data-i18n="spiral_title">✏️ Spiral Drawing</h2>
+                <div class="test-container">
+                    <div class="spiral-grid">
+                        <div>
+                            <h4 data-i18n="spiral_reference">Reference</h4>
+                            <canvas id="spiralReference" class="spiral-canvas" width="250" height="250"></canvas>
+                        </div>
+                        <div>
+                            <h4 data-i18n="spiral_your">Your Drawing</h4>
+                            <canvas id="spiralCanvas" class="spiral-canvas" width="250" height="250"></canvas>
+                        </div>
+                    </div>
+                    <div id="spiralMetrics" style="display: none;"></div>
+                    <div class="button-group">
+                        <button id="spiralStartBtn" class="btn btn-primary" data-i18n="btn_draw">✏️ Draw</button>
+                        <button id="spiralClearBtn" class="btn btn-secondary" style="display: none;" data-i18n="btn_clear">🔄 Clear</button>
+                        <button id="spiralSaveBtn" class="btn btn-success" style="display: none;" data-i18n="btn_save">✅ Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESULTS VIEW -->
+        <div id="resultsView" class="view">
+            <div class="card">
+                <h2 data-i18n="results_title">📊 Results</h2>
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th data-i18n="col_assessment">Assessment</th>
+                            <th data-i18n="col_score">Score</th>
+                            <th data-i18n="col_severity">Severity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>🎤 <span data-i18n="results_voice">Speech</span></td>
+                            <td><span id="rptVoiceScore">-</span></td>
+                            <td><span id="rptVoiceSev">-</span></td>
+                        </tr>
+                        <tr>
+                            <td>📱 <span data-i18n="results_tremor">Tremor</span></td>
+                            <td><span id="rptTremorScore">-</span></td>
+                            <td><span id="rptTremorSev">-</span></td>
+                        </tr>
+                        <tr>
+                            <td>🚶 <span data-i18n="results_gait">Gait</span></td>
+                            <td><span id="rptGaitScore">-</span></td>
+                            <td><span id="rptGaitSev">-</span></td>
+                        </tr>
+                        <tr>
+                            <td>😊 <span data-i18n="results_facial">Facial</span></td>
+                            <td><span id="rptFacialScore">-</span></td>
+                            <td><span id="rptFacialSev">-</span></td>
+                        </tr>
+                        <tr>
+                            <td>❓ <span data-i18n="results_questions">Questions</span></td>
+                            <td><span id="rptQuestScore">-</span></td>
+                            <td><span id="rptQuestSev">-</span></td>
+                        </tr>
+                        <tr>
+                            <td>✏️ <span data-i18n="results_spiral">Spiral</span></td>
+                            <td><span id="rptSpiralScore">-</span></td>
+                            <td><span id="rptSpiralSev">-</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="navigateTo('report')" data-i18n="btn_full_report">📄 Generate Report</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- REPORT VIEW -->
+        <div id="reportView" class="view">
+            <div class="card">
+                <h2 data-i18n="report_title">📄 Clinical Report</h2>
+                <div id="reportContent">
+                    <div class="info-grid" style="margin-top: 20px;">
+                        <div class="info-box">
+                            <h3 data-i18n="report_patient">Patient</h3>
+                            <p id="reportPatientName">-</p>
+                        </div>
+                        <div class="info-box">
+                            <h3 data-i18n="report_age">Age</h3>
+                            <p id="reportAge">-</p>
+                        </div>
+                        <div class="info-box">
+                            <h3 data-i18n="report_date">Date</h3>
+                            <p id="reportDate">-</p>
+                        </div>
+                    </div>
+                    <div id="reportInfo" style="margin-top: 20px;"></div>
+                </div>
+                <div class="button-group">
+                    <button id="downloadPdfBtn" class="btn btn-success" style="display: none;" onclick="downloadPDF()" data-i18n="btn_download_pdf">📥 Download PDF</button>
+                    <button class="btn btn-secondary" onclick="generateReport()" data-i18n="btn_generate">🔄 Generate</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ✅ CRITICAL: languages.js MUST load BEFORE assessment.js -->
+    <script src="languages.js"></script>
+    <script src="assessment.js"></script>
+</body>
+</html>
