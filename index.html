@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f0f23">
+    <title>NeuroCompass-PD | Clinical Assessment</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+</head>
+<body>
+
+<!-- SPLASH SCREEN -->
+<div class="splash-screen" id="splashScreen">
+    <div class="splash-logo">🧠</div>
+    <h1 class="splash-title">NeuroCompass-PD</h1>
+    <p class="splash-subtitle">Welcome to Clinical Assessment Suite</p>
+    <div class="splash-progress-container">
+        <div class="splash-progress">
+            <div class="splash-progress-bar" id="splashProgress"></div>
+        </div>
+    </div>
+</div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <button id="hamburgerBtn" class="hamburger-btn">☰</button>
+    
+    <div class="navbar-center">
+        <span class="brand-icon">🧠</span>
+        <div class="navbar-brand">
+            <div class="brand-name">NeuroCompass-PD</div>
+            <div class="brand-version">v4.1 Clinical</div>
+        </div>
+    </div>
+
+    <div class="navbar-right">
+        <select id="languageSelector" class="language-dropdown">
+            <option value="en">🌐 EN</option>
+            <option value="hi">🇮🇳 HI</option>
+            <option value="ru">🇷🇺 RU</option>
+        </select>
+        <button id="voiceBtn" class="voice-btn">🔊</button>
+    </div>
+</nav>
+
+<!-- SIDEBAR -->
+<div id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+        <h2>Navigation</h2>
+        <button id="closeSidebarBtn" class="close-btn">✕</button>
+    </div>
+    <nav class="sidebar-nav">
+        <a href="#" class="nav-link active" data-view="dashboard">📈 Dashboard</a>
+        <a href="#" class="nav-link" data-view="info">ℹ️ PD Info</a>
+        <a href="#" class="nav-link" data-view="patient">👤 Patient</a>
+        <a href="#" class="nav-link" data-view="voice">🎤 Speech</a>
+        <a href="#" class="nav-link" data-view="tremor">📳 Tremor</a>
+        <a href="#" class="nav-link" data-view="gait">🚶 Gait</a>
+        <a href="#" class="nav-link" data-view="facial">😊 Facial</a>
+        <a href="#" class="nav-link" data-view="questions">❓ Questions</a>
+        <a href="#" class="nav-link" data-view="spiral">🌀 Spiral</a>
+        <a href="#" class="nav-link" data-view="results">📊 Results</a>
+        <a href="#" class="nav-link" data-view="report">📄 Report</a>
+    </nav>
+    <div class="sidebar-footer">
+        <p><strong>Created by</strong></p>
+        <p>Aradhya Chavan</p>
+        <p><strong>Email:</strong></p>
+        <p><a href="mailto:aradhyachavan2@gmail.com">aradhyachavan2@gmail.com</a></p>
+    </div>
+</div>
+
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+<!-- MAIN CONTENT -->
+<main class="main-content">
+
+    <!-- DASHBOARD -->
+    <div class="view active" id="dashboardView">
+        <div class="card">
+            <h2>Dashboard</h2>
+            <div class="dashboard-grid">
+                <div class="dashboard-box">
+                    <div class="box-icon">👤</div>
+                    <h3>Patient Profile</h3>
+                    <p id="patientStatus">Required</p>
+                    <button class="btn btn-primary" onclick="navigateTo('patient')">Complete</button>
+                </div>
+                <div class="dashboard-box">
+                    <div class="box-icon">🔬</div>
+                    <h3>Tests</h3>
+                    <p id="testCount">0/6</p>
+                    <button class="btn btn-secondary" id="startTestsBtn" onclick="navigateTo('voice')">Start Tests</button>
+                </div>
+                <div class="dashboard-box">
+                    <div class="box-icon">📊</div>
+                    <h3>Report</h3>
+                    <p>Results</p>
+                    <button class="btn btn-secondary" id="reportBtn" onclick="navigateTo('report')" disabled>View Report</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PD INFO -->
+    <div class="view" id="infoView">
+        <div class="card">
+            <h2>Parkinson's Disease Information</h2>
+            <div class="info-box">
+                <h3>What is Parkinson's?</h3>
+                <p>A progressive neurodegenerative disorder characterized by tremor, bradykinesia, rigidity, and postural instability.</p>
+            </div>
+            <div class="info-box">
+                <h3>MDS-UPDRS Assessment</h3>
+                <p>Unified Parkinson's Disease Rating Scale for comprehensive motor examination.</p>
+            </div>
+            <button class="btn btn-primary btn-block" onclick="navigateTo('patient')">Continue</button>
+        </div>
+    </div>
+
+    <!-- PATIENT FORM -->
+    <div class="view" id="patientView">
+        <div class="card">
+            <h2>Patient Information</h2>
+            <form id="patientForm" onsubmit="savePatient(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>First Name</label>
+                        <input type="text" id="firstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Last Name</label>
+                        <input type="text" id="lastName" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Date of Birth</label>
+                        <input type="date" id="dob" required onchange="validateAge()">
+                        <span id="ageError" style="color: red; display: none;">Must be 18+</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Gender</label>
+                        <select id="gender" required>
+                            <option value="">Select</option>
+                            <option value="M">Male</option>
+                            <option value="F">Female</option>
+                            <option value="O">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Country Code</label>
+                        <select id="countryCode" required>
+                            <option value="">Select</option>
+                            <option value="+1">🇺🇸 +1 USA</option>
+                            <option value="+44">🇬🇧 +44 UK</option>
+                            <option value="+91">🇮🇳 +91 India</option>
+                            <option value="+7">🇷🇺 +7 Russia</option>
+                            <option value="+86">🇨🇳 +86 China</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="tel" id="phone" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Medical ID</label>
+                        <input type="text" id="medicalId">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success btn-block">Save & Unlock Tests</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- VOICE TEST -->
+    <div class="view" id="voiceView">
+        <div class="card">
+            <h2>🎤 Speech Assessment</h2>
+            <p>Say "AAAAA" for 6 seconds</p>
+            
+            <div id="voiceCountdown" class="countdown-display" style="display: none;">
+                <div>Starting in</div>
+                <div class="timer-big" id="voiceCountdownNum">3</div>
+            </div>
+
+            <div id="voiceRecording" style="display: none; text-align: center; margin: 2rem 0;">
+                <svg class="waveform" viewBox="0 0 100 40">
+                    <circle cx="15" cy="20" r="2" class="wave-dot"></circle>
+                    <circle cx="25" cy="20" r="2" class="wave-dot"></circle>
+                    <circle cx="35" cy="20" r="2" class="wave-dot"></circle>
+                    <circle cx="45" cy="20" r="2" class="wave-dot"></circle>
+                    <circle cx="55" cy="20" r="2" class="wave-dot"></circle>
+                    <circle cx="65" cy="20" r="2" class="wave-dot"></circle>
+                    <circle cx="75" cy="20" r="2" class="wave-dot"></circle>
+                    <circle cx="85" cy="20" r="2" class="wave-dot"></circle>
+                </svg>
+                <div class="timer-big" id="voiceRecordingNum">6</div>
+            </div>
+
+            <div id="voiceMetrics" style="display: none; margin: 2rem 0;">
+                <table class="metrics-table">
+                    <tr><td>Jitter</td><td id="jitterVal">—</td></tr>
+                    <tr><td>Shimmer</td><td id="shimmerVal">—</td></tr>
+                    <tr><td>HNR</td><td id="hnrVal">—</td></tr>
+                    <tr><td>F0</td><td id="f0Val">—</td></tr>
+                </table>
+            </div>
+
+            <div class="trial-dots" id="voiceTrials">
+                <span class="dot" id="trial1">1</span>
+                <span class="dot" id="trial2">2</span>
+                <span class="dot" id="trial3">3</span>
+            </div>
+
+            <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                <button id="voiceStartBtn" class="btn btn-primary" onclick="startVoiceRecording()" style="flex: 1;">🎤 Start</button>
+                <button id="voiceCompleteBtn" class="btn btn-success" onclick="completeVoiceTest()" style="flex: 1; display: none;">✓ Complete</button>
+                <button class="btn btn-secondary" onclick="navigateTo('dashboard')" style="flex: 1;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TREMOR TEST -->
+    <div class="view" id="tremorView">
+        <div class="card">
+            <h2>📳 Tremor Assessment</h2>
+            <p>Record tremor from both hands</p>
+
+            <div id="tremorHandSelect" style="text-align: center; margin: 2rem 0;">
+                <div style="font-size: 2.5rem; margin-bottom: 2rem;">👈 SELECT HAND 👉</div>
+                <div style="display: flex; gap: 2rem; justify-content: center;">
+                    <button class="btn btn-primary btn-large" onclick="selectTremorHand('left')">👈 Left</button>
+                    <button class="btn btn-primary btn-large" onclick="selectTremorHand('right')">Right 👉</button>
+                </div>
+            </div>
+
+            <div id="tremorCountdown" class="countdown-display" style="display: none;">
+                <div>Starting in</div>
+                <div class="timer-big" id="tremorCountdownNum">3</div>
+            </div>
+
+            <div id="tremorRecording" style="display: none; text-align: center; margin: 2rem 0;">
+                <div style="font-size: 2rem; margin-bottom: 1rem;" id="handEmoji">👋</div>
+                <svg class="waveform" viewBox="0 0 100 40">
+                    <circle cx="15" cy="20" r="2" class="wave-dot"></circle>
+                    <circle cx="25" cy="20" r="2" class="wave-dot"></circle>
+                    <circle cx="35" cy="20" r="2" class="wave-dot"></circle>
+                    <circle cx="45" cy="20" r="2" class="wave-dot"></circle>
+                    <circle cx="55" cy="20" r="2" class="wave-dot"></circle>
+                    <circle cx="65" cy="20" r="2" class="wave-dot"></circle>
+                    <circle cx="75" cy="20" r="2" class="wave-dot"></circle>
+                    <circle cx="85" cy="20" r="2" class="wave-dot"></circle>
+                </svg>
+                <div class="timer-big" id="tremorRecordingNum">10</div>
+            </div>
+
+            <div id="tremorMetrics" style="display: none; margin: 2rem 0;">
+                <table class="metrics-table">
+                    <tr><td>Frequency</td><td id="freqVal">—</td></tr>
+                    <tr><td>Amplitude</td><td id="ampVal">—</td></tr>
+                    <tr><td>Power</td><td id="powVal">—</td></tr>
+                </table>
+            </div>
+
+            <div class="trial-dots" id="tremorHands">
+                <span class="dot" id="leftHand">L</span>
+                <span class="dot" id="rightHand">R</span>
+            </div>
+
+            <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                <button id="tremorCompleteBtn" class="btn btn-success" onclick="completeTremorTest()" style="flex: 1; display: none;">✓ Complete</button>
+                <button class="btn btn-secondary" onclick="navigateTo('dashboard')" style="flex: 1;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GAIT TEST -->
+    <div class="view" id="gaitView">
+        <div class="card">
+            <h2>🚶 Gait Assessment</h2>
+            <p>Walk naturally for 15 seconds</p>
+
+            <div id="gaitStart" style="text-align: center; margin: 2rem 0;">
+                <button class="btn btn-primary btn-large" onclick="startGaitTest()">🎥 Start Gait</button>
+            </div>
+
+            <div id="gaitCountdown" class="countdown-display" style="display: none;">
+                <div>Starting in</div>
+                <div class="timer-big" id="gaitCountdownNum">3</div>
+            </div>
+
+            <div id="gaitCamera" style="display: none;">
+                <video id="gaitVideo" class="camera-video"></video>
+                <canvas id="gaitCanvas" class="camera-canvas"></canvas>
+            </div>
+
+            <div id="gaitMetrics" style="display: none; margin: 2rem 0;">
+                <table class="metrics-table">
+                    <tr><td>Cadence</td><td id="cadVal">—</td></tr>
+                    <tr><td>Stride Length</td><td id="strVal">—</td></tr>
+                    <tr><td>Speed</td><td id="spdVal">—</td></tr>
+                </table>
+            </div>
+
+            <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                <button id="gaitCompleteBtn" class="btn btn-success" onclick="completeGaitTest()" style="flex: 1; display: none;">✓ Complete</button>
+                <button class="btn btn-secondary" onclick="navigateTo('dashboard')" style="flex: 1;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FACIAL TEST -->
+    <div class="view" id="facialView">
+        <div class="card">
+            <h2>😊 Facial Expression</h2>
+            <p>Maintain natural expression for 10 seconds</p>
+
+            <div id="facialStart" style="text-align: center; margin: 2rem 0;">
+                <button class="btn btn-primary btn-large" onclick="startFacialTest()">📱 Start Facial</button>
+            </div>
+
+            <div id="facialCountdown" class="countdown-display" style="display: none;">
+                <div>Starting in</div>
+                <div class="timer-big" id="facialCountdownNum">3</div>
+            </div>
+
+            <div id="facialCamera" style="display: none;">
+                <video id="facialVideo" class="camera-video"></video>
+                <canvas id="facialCanvas" class="camera-canvas"></canvas>
+            </div>
+
+            <div id="facialMetrics" style="display: none; margin: 2rem 0;">
+                <table class="metrics-table">
+                    <tr><td>Blink Rate</td><td id="blkVal">—</td></tr>
+                    <tr><td>Jaw Opening</td><td id="jawVal">—</td></tr>
+                    <tr><td>Mouth Width</td><td id="mthVal">—</td></tr>
+                </table>
+            </div>
+
+            <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                <button id="facialCompleteBtn" class="btn btn-success" onclick="completeFacialTest()" style="flex: 1; display: none;">✓ Complete</button>
+                <button class="btn btn-secondary" onclick="navigateTo('dashboard')" style="flex: 1;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUESTIONS -->
+    <div class="view" id="questionsView">
+        <div class="card">
+            <h2>❓ Questions</h2>
+            <form id="questionsForm" onsubmit="submitQuestions(event)">
+                <div class="question-item">
+                    <label>Do you experience slowness of movement?</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="q1" value="0"> No</label>
+                        <label><input type="radio" name="q1" value="1"> Sometimes</label>
+                        <label><input type="radio" name="q1" value="2"> Often</label>
+                    </div>
+                </div>
+                <div class="question-item">
+                    <label>Do you experience stiffness?</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="q2" value="0"> No</label>
+                        <label><input type="radio" name="q2" value="1"> Sometimes</label>
+                        <label><input type="radio" name="q2" value="2"> Often</label>
+                    </div>
+                </div>
+                <div class="question-item">
+                    <label>Do you experience balance issues?</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="q3" value="0"> No</label>
+                        <label><input type="radio" name="q3" value="1"> Sometimes</label>
+                        <label><input type="radio" name="q3" value="2"> Often</label>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <button type="submit" class="btn btn-success" style="flex: 1;">✓ Complete</button>
+                    <button type="button" class="btn btn-secondary" onclick="navigateTo('dashboard')" style="flex: 1;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SPIRAL TEST -->
+    <div class="view" id="spiralView">
+        <div class="card">
+            <h2>🌀 Spiral Drawing</h2>
+            <p>Draw a smooth spiral. Start from center.</p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; align-items: center;">
+                <div>
+                    <h4>Reference</h4>
+                    <canvas id="refSpiral" width="200" height="200" style="border: 2px solid #0ea5e9; border-radius: 8px; background: rgba(0,0,0,0.2);"></canvas>
+                </div>
+                <div>
+                    <h4>Your Drawing</h4>
+                    <canvas id="spiralCanvas" width="200" height="200" style="border: 2px solid #0ea5e9; border-radius: 8px; background: rgba(0,0,0,0.2); cursor: crosshair;"></canvas>
+                </div>
+            </div>
+
+            <div id="spiralMetrics" style="margin: 2rem 0; display: none;">
+                <table class="metrics-table">
+                    <tr><td>Tremor Index</td><td id="treIdxVal">—</td></tr>
+                    <tr><td>Path Length</td><td id="pathVal">—</td></tr>
+                    <tr><td>Velocity</td><td id="velVal">—</td></tr>
+                </table>
+            </div>
+
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-secondary" onclick="clearSpiral()" style="flex: 1;">Clear</button>
+                <button id="spiralCompleteBtn" class="btn btn-success" onclick="completeSpiralTest()" style="flex: 1;">✓ Complete</button>
+                <button class="btn btn-secondary" onclick="navigateTo('dashboard')" style="flex: 1;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="view" id="resultsView">
+        <div class="card">
+            <h2>📊 Results</h2>
+            <table class="results-table">
+                <tr><th>Test</th><th>Status</th><th>Score</th></tr>
+                <tr><td>🎤 Speech</td><td id="voiceStatus">❌</td><td id="voiceScore">—</td></tr>
+                <tr><td>📳 Tremor</td><td id="tremorStatus">❌</td><td id="tremorScore">—</td></tr>
+                <tr><td>🚶 Gait</td><td id="gaitStatus">❌</td><td id="gaitScore">—</td></tr>
+                <tr><td>😊 Facial</td><td id="facialStatus">❌</td><td id="facialScore">—</td></tr>
+                <tr><td>❓ Questions</td><td id="questionsStatus">❌</td><td id="questionsScore">—</td></tr>
+                <tr><td>🌀 Spiral</td><td id="spiralStatus">❌</td><td id="spiralScore">—</td></tr>
+            </table>
+            <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                <button class="btn btn-primary" onclick="navigateTo('report')" style="flex: 1;">Generate Report</button>
+                <button class="btn btn-secondary" onclick="navigateTo('dashboard')" style="flex: 1;">Back</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- REPORT -->
+    <div class="view" id="reportView">
+        <div class="card">
+            <h2>📄 Report</h2>
+            <canvas id="radarChart"></canvas>
+            <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                <button class="btn btn-success" onclick="downloadPDF()" style="flex: 1;">⬇️ Download PDF</button>
+                <button class="btn btn-secondary" onclick="navigateTo('dashboard')" style="flex: 1;">Back</button>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<script src="lang.js"></script>
+<script src="mediapipe_init.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
