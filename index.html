@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroCompass-PD v4.5 - MDS-UPDRS Assessment</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.4.1633559619"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.4.1633559619"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.4.1633559619"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #0ea5e9;
+            --primary-dark: #0284c7;
+            --danger: #ff6b6b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --border: #334155;
+            --text: #f1f5f9;
+            --text-secondary: #cbd5e1;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* SPLASH SCREEN - FIXED */
+        #splashScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: slideDown 0.8s ease-out;
+        }
+
+        #splashScreen.hidden {
+            display: none !important;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .splash-content {
+            text-align: center;
+            animation: fadeInUp 0.8s ease-out 0.3s both;
+        }
+
+        .splash-logo {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .splash-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #0ea5e9, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .splash-subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* LAYOUT */
+        .container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 280px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            position: relative;
+            z-index: 100;
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100vh;
+                transform: translateX(-100%);
+                z-index: 200;
+            }
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .sidebar-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 24px;
+            cursor: pointer;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .close-btn {
+                display: block;
+            }
+        }
+
+        .nav-links {
+            list-style: none;
+            padding: 10px 0;
+        }
+
+        .nav-link {
+            padding: 12px 20px;
+            display: block;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background: rgba(14, 165, 233, 0.1);
+            color: var(--primary);
+        }
+
+        .nav-link.active {
+            background: rgba(14, 165, 233, 0.15);
+            border-left-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* HEADER */
+        .header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 15px 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: 0;
+            z-index: 50;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .hamburger {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 24px;
+            cursor: pointer;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .hamburger {
+                display: block;
+            }
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-select {
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .voice-btn {
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            color: var(--text);
+            transition: all 0.3s ease;
+            animation: pulse-slow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+
+        /* MAIN CONTENT */
+        .main {
+            flex: 1;
+            margin-left: 280px;
+            margin-top: 70px;
+            overflow-y: auto;
+            padding: 25px;
+        }
+
+        @media (max-width: 768px) {
+            .main {
+                margin-left: 0;
+            }
+        }
+
+        .view {
+            display: none;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        /* FORMS */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+
+        /* BUTTONS */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(14, 165, 233, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--border);
+            color: var(--text);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(51, 65, 85, 0.8);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: #000;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* CARDS */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(14, 165, 233, 0.1);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+
+        /* CAMERA CONTAINER - FIXED OVERLAY */
+        .camera-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 20px auto;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .camera-container video,
+        .camera-container canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .camera-container video {
+            z-index: 1;
+        }
+
+        .camera-container canvas {
+            z-index: 2;
+        }
+
+        .camera-container::before {
+            content: '';
+            display: block;
+            padding-bottom: 75%;
+        }
+
+        /* METRICS */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .metric {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .metric-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        /* CAMERA CONTROLS */
+        .camera-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .camera-btn {
+            background: var(--primary);
+            color: #000;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .camera-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        /* OVERLAY */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 150;
+        }
+
+        .sidebar-overlay.open {
+            display: block;
+        }
+
+        /* ERROR MESSAGE */
+        .error-message {
+            background: rgba(255, 107, 107, 0.15);
+            color: var(--danger);
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        /* COUNTDOWN */
+        .countdown {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--primary);
+            text-align: center;
+            margin: 20px 0;
+            animation: scaleDown 1s ease-out;
+        }
+
+        @keyframes scaleDown {
+            from {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+            to {
+                transform: scale(0.8);
+                opacity: 0.7;
+            }
+        }
+
+        /* RECORDING INDICATOR */
+        .recording-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: var(--danger);
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        /* TABLE */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: rgba(14, 165, 233, 0.1);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: rgba(14, 165, 233, 0.05);
+        }
+
+        /* RADAR CHART CONTAINER - FIXED */
+        .chart-container {
+            position: relative;
+            max-width: 400px;
+            margin: 20px auto;
+            padding: 20px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .chart-container canvas {
+            max-height: 400px;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .main {
+                padding: 15px;
+            }
+
+            .header {
+                flex-wrap: wrap;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .camera-container {
+                max-width: 100%;
+            }
+        }
+
+        .display-none {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- SPLASH SCREEN -->
+    <div id="splashScreen">
+        <div class="splash-content">
+            <div class="splash-logo">🧠</div>
+            <h1 class="splash-title">NeuroCompass-PD</h1>
+            <p class="splash-subtitle" id="splashSub">Clinical Assessment Platform v4.5</p>
+            <div style="margin-top: 40px;">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title" id="navTitle">Navigation</div>
+                <button class="close-btn" id="closeSidebarBtn">×</button>
+            </div>
+            <nav>
+                <ul class="nav-links">
+                    <li><a class="nav-link active" href="#" data-view="dashboard" id="nav-dashboard">Dashboard</a></li>
+                    <li><a class="nav-link" href="#" data-view="info" id="nav-info">PD Information</a></li>
+                    <li><a class="nav-link" href="#" data-view="patient" id="nav-patient">Patient Profile</a></li>
+                    <li><a class="nav-link" href="#" data-view="voice" id="nav-voice">Speech Assessment</a></li>
+                    <li><a class="nav-link" href="#" data-view="tremor" id="nav-tremor">Tremor Assessment</a></li>
+                    <li><a class="nav-link" href="#" data-view="gait" id="nav-gait">Gait Assessment</a></li>
+                    <li><a class="nav-link" href="#" data-view="facial" id="nav-facial">Facial Expression</a></li>
+                    <li><a class="nav-link" href="#" data-view="questions" id="nav-questions">Questions</a></li>
+                    <li><a class="nav-link" href="#" data-view="spiral" id="nav-spiral">Spiral Drawing</a></li>
+                    <li><a class="nav-link" href="#" data-view="results" id="nav-results">Results</a></li>
+                    <li><a class="nav-link" href="#" data-view="report" id="nav-report">Report</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- SIDEBAR OVERLAY -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- MAIN CONTENT -->
+        <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+            <!-- HEADER -->
+            <header class="header">
+                <div class="header-left">
+                    <button class="hamburger" id="hamburgerBtn">☰</button>
+                    <div class="header-title">NeuroCompass-PD</div>
+                </div>
+                <div class="header-right">
+                    <select class="header-select" id="languageSelector">
+                        <option value="en">English</option>
+                        <option value="hi">हिन्दी</option>
+                        <option value="ru">Русский</option>
+                    </select>
+                    <button class="voice-btn" id="voiceBtn" title="Voice Assistant">🔊</button>
+                </div>
+            </header>
+
+            <!-- MAIN CONTENT AREA -->
+            <main class="main">
+                <!-- DASHBOARD VIEW -->
+                <div id="dashboardView" class="view active">
+                    <h2 id="dash-title">Clinical Assessment Dashboard</h2>
+                    <p id="dash-subtitle">MDS-UPDRS Part III digital screening summary</p>
+
+                    <div class="card">
+                        <div class="card-title" id="dash-patient">Patient Profile</div>
+                        <p id="patientStatus">✗ Not started</p>
+                        <button class="btn btn-primary" onclick="navigateTo('patient')">Complete Profile</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title" id="dash-tests">Screening Tests</div>
+                        <p>Progress: <strong id="testCount">0/6</strong></p>
+                        <div style="margin-top: 15px;">
+                            <button class="btn btn-primary" onclick="navigateTo('voice')">Speech</button>
+                            <button class="btn btn-primary" style="margin-left: 10px;" onclick="navigateTo('tremor')">Tremor</button>
+                            <button class="btn btn-primary" style="margin-left: 10px;" onclick="navigateTo('gait')">Gait</button>
+                            <button class="btn btn-primary" style="margin-left: 10px;" onclick="navigateTo('facial')">Facial</button>
+                            <button class="btn btn-primary" style="margin-left: 10px;" onclick="navigateTo('questions')">Questions</button>
+                            <button class="btn btn-primary" style="margin-left: 10px;" onclick="navigateTo('spiral')">Spiral</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INFO VIEW -->
+                <div id="infoView" class="view">
+                    <h2 id="info-title">Parkinson's Disease Information</h2>
+                    <p id="info-subtitle">Clinical background and MDS-UPDRS Part III protocol</p>
+                    <div class="card">
+                        <h3 id="info-what">What is Parkinson's?</h3>
+                        <p id="info-desc">Progressive neurodegenerative disorder with tremor, bradykinesia, rigidity and postural instability.</p>
+                    </div>
+                    <div class="card">
+                        <h3 id="info-updrs-title">MDS-UPDRS Part III</h3>
+                        <p id="info-updrs-desc">Motor examination with 18 items scored 0-4 (0=normal, 4=severe).</p>
+                    </div>
+                </div>
+
+                <!-- PATIENT FORM VIEW -->
+                <div id="patientView" class="view">
+                    <h2 id="form-title">Patient Profile</h2>
+                    <form onsubmit="savePatient(event)">
+                        <div class="card">
+                            <div class="form-group">
+                                <label for="firstName" id="label-first">First Name</label>
+                                <input type="text" id="firstName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="lastName" id="label-last">Last Name</label>
+                                <input type="text" id="lastName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="dob" id="label-dob">Date of Birth</label>
+                                <input type="date" id="dob" required onchange="validateAge()">
+                                <div class="error-message" id="ageError" style="margin-top: 8px;">Age must be 18 or older</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="gender" id="label-gender">Gender</label>
+                                <select id="gender" required>
+                                    <option value="">Select Gender</option>
+                                    <option value="M">Male</option>
+                                    <option value="F">Female</option>
+                                    <option value="O">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="countryCode" id="label-country">Country Code</label>
+                                <select id="countryCode" required>
+                                    <option value="">Select Country</option>
+                                    <option value="IN">India (+91)</option>
+                                    <option value="RU">Russia (+7)</option>
+                                    <option value="KZ">Kazakhstan (+7)</option>
+                                    <option value="KG">Kyrgyzstan (+996)</option>
+                                    <option value="UZ">Uzbekistan (+998)</option>
+                                    <option value="TJ">Tajikistan (+992)</option>
+                                    <option value="UA">Ukraine (+380)</option>
+                                    <option value="US">USA (+1)</option>
+                                    <option value="GB">UK (+44)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="phone" id="label-phone">Phone Number</label>
+                                <input type="tel" id="phone" required placeholder="Digits only">
+                            </div>
+                            <div class="form-group">
+                                <label for="email" id="label-email">Email</label>
+                                <input type="email" id="email">
+                            </div>
+                            <div class="form-group">
+                                <label for="medicalId" id="label-medid">Medical Record Number</label>
+                                <input type="text" id="medicalId">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save & Unlock Tests</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- VOICE VIEW -->
+                <div id="voiceView" class="view">
+                    <h2 id="voice-title">Speech Assessment</h2>
+                    <p id="voice-desc">Record 3 trials of "AAAAA" for 6 seconds each</p>
+
+                    <div class="card">
+                        <div id="voiceStartBtn">
+                            <button class="btn btn-primary" onclick="startVoiceRecording()">🎤 Start Recording</button>
+                        </div>
+
+                        <div id="voiceCountdown" class="display-none">
+                            <p id="voice-countdown-text">Starting in...</p>
+                            <div class="countdown" id="voiceCountdownNum">3</div>
+                        </div>
+
+                        <canvas id="voiceCanvas" width="400" height="100" style="display: none; margin: 20px 0;"></canvas>
+
+                        <div id="voiceWaveform" class="display-none">
+                            <p>🎤 Recording Trial <span id="voiceTrialNum">1</span>... <span class="recording-indicator"></span></p>
+                            <p>Time: <span id="voiceRecordingNum">6</span>s</p>
+                        </div>
+
+                        <div id="voiceMetrics" class="display-none" style="margin-top: 20px;">
+                            <h4>Trial Results:</h4>
+                            <div class="metrics-grid">
+                                <div class="metric">
+                                    <div class="metric-label" id="metric-jitter">Jitter</div>
+                                    <div class="metric-value" id="jitterVal">0%</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label" id="metric-shimmer">Shimmer</div>
+                                    <div class="metric-value" id="shimmerVal">0 dB</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label" id="metric-hnr">HNR</div>
+                                    <div class="metric-value" id="hnrVal">0 dB</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label" id="metric-f0">Pitch</div>
+                                    <div class="metric-value" id="f0Val">0 Hz</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label" id="metric-voiceupd">UPDRS</div>
+                                    <div class="metric-value" id="voiceUpdrsVal">0/4</div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 20px;">
+                                <div id="trial1" style="display: inline-block; width: 20px; height: 20px; background: var(--border); border-radius: 50%; margin: 5px; text-align: center; line-height: 20px; font-size: 12px;">1</div>
+                                <div id="trial2" style="display: inline-block; width: 20px; height: 20px; background: var(--border); border-radius: 50%; margin: 5px; text-align: center; line-height: 20px; font-size: 12px;">2</div>
+                                <div id="trial3" style="display: inline-block; width: 20px; height: 20px; background: var(--border); border-radius: 50%; margin: 5px; text-align: center; line-height: 20px; font-size: 12px;">3</div>
+                            </div>
+                        </div>
+
+                        <div id="voiceCompleteBtn" style="display: none; margin-top: 20px;">
+                            <button class="btn btn-success" onclick="completeVoiceTest()">✓ Next Test (Tremor)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TREMOR VIEW -->
+                <div id="tremorView" class="view">
+                    <h2 id="tremor-title">Tremor Assessment</h2>
+                    <p id="tremor-desc">Device motion capture for 10 seconds</p>
+
+                    <div class="card">
+                        <div id="tremorHandSelect">
+                            <p>Select a hand:</p>
+                            <button class="btn btn-primary" id="btn-left" onclick="selectTremorHand('left')">👈 Left Hand</button>
+                            <button class="btn btn-primary" style="margin-left: 10px;" id="btn-right" onclick="selectTremorHand('right')">👉 Right Hand</button>
+                        </div>
+
+                        <div id="tremorCountdown" class="display-none">
+                            <p id="tremor-countdown-text">Starting in...</p>
+                            <div class="countdown" id="tremorCountdownNum">3</div>
+                        </div>
+
+                        <canvas id="tremorCanvas" width="400" height="100" style="display: none; margin: 20px 0;"></canvas>
+
+                        <div id="tremorWaveform" class="display-none">
+                            <p>Recording <span id="handEmoji">👈</span>... <span class="recording-indicator"></span></p>
+                            <p>Time: <span id="tremorRecordingNum">10</span>s</p>
+                        </div>
+
+                        <div id="tremorMetrics" class="display-none" style="margin-top: 20px;">
+                            <h4>Results:</h4>
+                            <div class="metrics-grid">
+                                <div class="metric">
+                                    <div class="metric-label" id="metric-freq">Frequency</div>
+                                    <div class="metric-value" id="freqVal">0 Hz</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label" id="metric-amp">Amplitude</div>
+                                    <div class="metric-value" id="ampVal">0 m/s²</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label" id="metric-pow">Power</div>
+                                    <div class="metric-value" id="powVal">0 dB</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label" id="metric-treupd">UPDRS</div>
+                                    <div class="metric-value" id="tremorUpdrsVal">0/4</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="tremorCompleteBtn" style="display: none; margin-top: 20px;">
+                            <button class="btn btn-success" onclick="completeTremorTest()">✓ Next Test (Gait)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GAIT VIEW - FIXED OVERLAY CANVAS -->
+                <div id="gaitView" class="view">
+                    <h2 id="gait-title">Gait Assessment</h2>
+                    <p id="gait-desc">Camera-based gait analysis with skeleton overlay (15 seconds)</p>
+
+                    <div class="card">
+                        <div id="gaitStart">
+                            <button class="btn btn-primary" onclick="startGaitTest()">📹 Start Camera</button>
+                        </div>
+
+                        <div id="gaitCountdown" class="display-none">
+                            <p id="gait-countdown-text">Starting in...</p>
+                            <div class="countdown" id="gaitCountdownNum">3</div>
+                        </div>
+
+                        <div id="gaitCamera" class="display-none">
+                            <div class="camera-controls">
+                                <button class="camera-btn" onclick="toggleGaitCamera()">📷 Flip Camera</button>
+                                <button class="camera-btn" onclick="document.getElementById('gaitCanvas').requestFullscreen()">⛶ Fullscreen</button>
+                            </div>
+                            <!-- FIXED: Canvas overlay on top of video -->
+                            <div class="camera-container">
+                                <video id="gaitVideo" autoplay playsinline muted></video>
+                                <canvas id="gaitCanvas" width="640" height="480"></canvas>
+                            </div>
+                            <p>⏱ Time: <span id="gaitTimer">15</span>s | GREEN SKELETON VISIBLE</p>
+                        </div>
+
+                        <div id="gaitMetrics" class="display-none" style="margin-top: 20px;">
+                            <h4>Gait Metrics:</h4>
+                            <div class="metrics-grid">
+                                <div class="metric">
+                                    <div class="metric-label" id="metric-cad">Cadence</div>
+                                    <div class="metric-value" id="cadVal">0 steps/min</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label" id="metric-str">Stride Length</div>
+                                    <div class="metric-value" id="strVal">0 m</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label" id="metric-spd">Speed</div>
+                                    <div class="metric-value" id="spdVal">0 m/s</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label" id="metric-gaitupd">UPDRS</div>
+                                    <div class="metric-value" id="gaitUpdrsVal">0/4</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="gaitCompleteBtn" style="display: none; margin-top: 20px;">
+                            <button class="btn btn-success" onclick="completeGaitTest()">✓ Next Test (Facial)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FACIAL VIEW - FIXED OVERLAY CANVAS -->
+                <div id="facialView" class="view">
+                    <h2 id="facial-title">Facial Expression Assessment</h2>
+                    <p id="facial-desc">Camera-based facial analysis with face mesh overlay (10 seconds)</p>
+
+                    <div class="card">
+                        <div id="facialStart">
+                            <button class="btn btn-primary" onclick="startFacialTest()">📹 Start Camera</button>
+                        </div>
+
+                        <div id="facialCountdown" class="display-none">
+                            <p id="facial-countdown-text">Starting in...</p>
+                            <div class="countdown" id="facialCountdownNum">3</div>
+                        </div>
+
+                        <div id="facialCamera" class="display-none">
+                            <div class="camera-controls">
+                                <button class="camera-btn" onclick="toggleFacialCamera()">📷 Flip Camera</button>
+                                <button class="camera-btn" onclick="document.getElementById('facialCanvas').requestFullscreen()">⛶ Fullscreen</button>
+                            </div>
+                            <!-- FIXED: Canvas overlay on top of video -->
+                            <div class="camera-container">
+                                <video id="facialVideo" autoplay playsinline muted></video>
+                                <canvas id="facialCanvas" width="640" height="480"></canvas>
+                            </div>
+                            <p>⏱ Time: <span id="facialTimer">10</span>s | MAGENTA FACE MESH VISIBLE</p>
+                        </div>
+
+                        <div id="facialMetrics" class="display-none" style="margin-top: 20px;">
+                            <h4>Facial Metrics:</h4>
+                            <div class="metrics-grid">
+                                <div class="metric">
+                                    <div class="metric-label" id="metric-blk">Blink Rate</div>
+                                    <div class="metric-value" id="blkVal">0 /min</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label" id="metric-jaw">Jaw Opening</div>
+                                    <div class="metric-value" id="jawVal">0 cm</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label" id="metric-mth">Mouth Width</div>
+                                    <div class="metric-value" id="mthVal">0 cm</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label" id="metric-facialupd">UPDRS</div>
+                                    <div class="metric-value" id="facialUpdrsVal">0/4</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="facialCompleteBtn" style="display: none; margin-top: 20px;">
+                            <button class="btn btn-success" onclick="completeFacialTest()">✓ Next Test (Questions)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUESTIONS VIEW -->
+                <div id="questionsView" class="view">
+                    <h2 id="questions-title">Questions Assessment</h2>
+                    <p id="questions-desc">Rate your experience</p>
+
+                    <form onsubmit="submitQuestions(event)">
+                        <div class="card">
+                            <div class="form-group">
+                                <label id="q1-label">1. Do you experience slowness of movement?</label>
+                                <div style="margin-top: 10px;">
+                                    <label><input type="radio" name="q1" value="0"> No</label>
+                                    <label style="margin-left: 15px;"><input type="radio" name="q1" value="1"> Sometimes</label>
+                                    <label style="margin-left: 15px;"><input type="radio" name="q1" value="2"> Often</label>
+                                    <label style="margin-left: 15px;"><input type="radio" name="q1" value="3"> Very Often</label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label id="q2-label">2. Do you have stiffness in arms or legs?</label>
+                                <div style="margin-top: 10px;">
+                                    <label><input type="radio" name="q2" value="0"> No</label>
+                                    <label style="margin-left: 15px;"><input type="radio" name="q2" value="1"> Sometimes</label>
+                                    <label style="margin-left: 15px;"><input type="radio" name="q2" value="2"> Often</label>
+                                    <label style="margin-left: 15px;"><input type="radio" name="q2" value="3"> Very Often</label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label id="q3-label">3. Do you have balance issues?</label>
+                                <div style="margin-top: 10px;">
+                                    <label><input type="radio" name="q3" value="0"> No</label>
+                                    <label style="margin-left: 15px;"><input type="radio" name="q3" value="1"> Sometimes</label>
+                                    <label style="margin-left: 15px;"><input type="radio" name="q3" value="2"> Often</label>
+                                    <label style="margin-left: 15px;"><input type="radio" name="q3" value="3"> Very Often</label>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">Save & Next (Spiral)</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- SPIRAL VIEW -->
+                <div id="spiralView" class="view">
+                    <h2 id="spiral-title">Spiral Drawing Test</h2>
+                    <p id="spiral-desc">Draw a smooth spiral</p>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="card">
+                            <h4 id="spiral-ref">Reference Spiral</h4>
+                            <canvas id="refSpiral" width="300" height="300" style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px;"></canvas>
+                        </div>
+
+                        <div class="card">
+                            <h4 id="spiral-your">Your Drawing</h4>
+                            <canvas id="spiralCanvas" width="300" height="300" style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; cursor: crosshair;"></canvas>
+                            <button class="btn btn-secondary" onclick="clearSpiral()" style="margin-top: 10px;">Clear</button>
+                        </div>
+                    </div>
+
+                    <div id="spiralMetrics" class="display-none" style="margin-top: 20px;">
+                        <h4>Spiral Metrics:</h4>
+                        <div class="metrics-grid">
+                            <div class="metric">
+                                <div class="metric-label" id="metric-tridx">Tremor Index</div>
+                                <div class="metric-value" id="tridxVal">0.0</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-label" id="metric-path">Path Length</div>
+                                <div class="metric-value" id="pathVal">0 px</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-label" id="metric-vel">Velocity</div>
+                                <div class="metric-value" id="velVal">0 px/s</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-label" id="metric-spiralupd">UPDRS</div>
+                                <div class="metric-value" id="spiralUpdrsVal">0/4</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <button class="btn btn-primary" onclick="calculateSpiralMetrics()">Calculate Metrics</button>
+                        <button class="btn btn-success" onclick="completeSpiralTest()" style="margin-left: 10px; display: none;" id="spiralViewResultsBtn">✓ View Results</button>
+                    </div>
+                </div>
+
+                <!-- RESULTS VIEW - FIXED CHART CONTAINER -->
+                <div id="resultsView" class="view">
+                    <h2 id="results-title">Assessment Results</h2>
+
+                    <div class="card">
+                        <h3>Overall Assessment Summary</h3>
+                        <!-- FIXED: Proper chart container -->
+                        <div class="chart-container">
+                            <canvas id="radarChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>Detailed Results Table</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Assessment</th>
+                                    <th>Score (0-4)</th>
+                                    <th>Severity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Speech</td>
+                                    <td id="resVoice">-</td>
+                                    <td id="resSevVoice">-</td>
+                                </tr>
+                                <tr>
+                                    <td>Tremor</td>
+                                    <td id="resTremor">-</td>
+                                    <td id="resSevTremor">-</td>
+                                </tr>
+                                <tr>
+                                    <td>Gait</td>
+                                    <td id="resGait">-</td>
+                                    <td id="resSevGait">-</td>
+                                </tr>
+                                <tr>
+                                    <td>Facial</td>
+                                    <td id="resFacial">-</td>
+                                    <td id="resSevFacial">-</td>
+                                </tr>
+                                <tr>
+                                    <td>Cognitive</td>
+                                    <td id="resCog">-</td>
+                                    <td id="resSevCog">-</td>
+                                </tr>
+                                <tr>
+                                    <td>Coordination</td>
+                                    <td id="resCoord">-</td>
+                                    <td id="resSevCoord">-</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="navigateTo('report')" style="margin-top: 20px;">📄 Generate Report</button>
+                </div>
+
+                <!-- REPORT VIEW -->
+                <div id="reportView" class="view">
+                    <h2 id="report-title">Clinical Report</h2>
+
+                    <div class="card">
+                        <h3 id="report-patient-title">Patient Information</h3>
+                        <table style="width: 100%; margin-top: 15px;">
+                            <tr><td style="width: 40%;">Name:</td><td id="rptName">-</td></tr>
+                            <tr><td>Age:</td><td id="rptAge">-</td></tr>
+                            <tr><td>Gender:</td><td id="rptGender">-</td></tr>
+                            <tr><td>Country:</td><td id="rptCountry">-</td></tr>
+                            <tr><td>Email:</td><td id="rptEmail">-</td></tr>
+                        </table>
+                    </div>
+
+                    <div class="card">
+                        <h3 id="report-summary-title">Assessment Summary</h3>
+                        <table style="width: 100%; margin-top: 15px;">
+                            <tr><td style="width: 40%;">Speech Severity:</td><td id="rptVoiceSev">-</td></tr>
+                            <tr><td>Tremor Severity:</td><td id="rptTremorSev">-</td></tr>
+                            <tr><td>Gait Severity:</td><td id="rptGaitSev">-</td></tr>
+                            <tr><td>Facial Severity:</td><td id="rptFacialSev">-</td></tr>
+                            <tr><td>Cognitive Severity:</td><td id="rptCogSev">-</td></tr>
+                            <tr><td>Coordination Severity:</td><td id="rptCoordSev">-</td></tr>
+                        </table>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <button class="btn btn-primary" onclick="downloadPDF()">📥 Download PDF Report</button>
+                        <button class="btn btn-secondary" onclick="navigateTo('dashboard')" style="margin-left: 10px;">Back to Dashboard</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- LOAD LANGUAGES FIRST (CRITICAL) -->
+    <script src="languages.js"></script>
+
+    <!-- THEN LOAD ASSESSMENT (CRITICAL) -->
+    <script src="assessment-fixed.js"></script>
+
+    <!-- INITIALIZATION SCRIPT -->
+    <script>
+        // Wait for DOM to be fully ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('✓ DOM Loaded');
+            
+            // Verify all critical elements exist
+            const criticalElements = [
+                'splashScreen', 'hamburgerBtn', 'languageSelector', 
+                'gaitCanvas', 'facialCanvas', 'radarChart'
+            ];
+            
+            criticalElements.forEach(id => {
+                const elem = document.getElementById(id);
+                if (!elem) {
+                    console.warn(`⚠️ Missing element: ${id}`);
+                } else {
+                    console.log(`✓ Found: ${id}`);
+                }
+            });
+            
+            // Hide splash after 3 seconds (FIXED)
+            setTimeout(() => {
+                const splash = document.getElementById('splashScreen');
+                if (splash) {
+                    splash.classList.add('hidden');
+                    console.log('✓ Splash hidden');
+                }
+            }, 3000);
+        });
+
+        // Global functions
+        function navigateTo(viewName) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            const view = document.getElementById(viewName + 'View');
+            if (view) view.classList.add('active');
+            
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('data-view') === viewName) {
+                    link.classList.add('active');
+                }
+            });
+            
+            window.scrollTo(0, 0);
+        }
+
+        function openSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (sidebar) sidebar.classList.add('open');
+            if (overlay) overlay.classList.add('open');
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (sidebar) sidebar.classList.remove('open');
+            if (overlay) overlay.classList.remove('open');
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const hamburger = document.getElementById('hamburgerBtn');
+            const closeSidebar = document.getElementById('closeSidebarBtn');
+            const overlay = document.getElementById('sidebarOverlay');
+            const navLinks = document.querySelectorAll('.nav-link');
+
+            if (hamburger) hamburger.addEventListener('click', openSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', closeSidebar);
+            if (overlay) overlay.addEventListener('click', closeSidebar);
+            
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const view = link.getAttribute('data-view');
+                    navigateTo(view);
+                    closeSidebar();
+                });
+            });
+        });
+    </script>
+</body>
+</html>
